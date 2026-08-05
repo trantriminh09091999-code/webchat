@@ -10,14 +10,31 @@
 </head>
 <body>
 
-<!-- Màn hình nhập tên -->
-<div id="joinScreen" class="join-screen">
+<!-- Màn hình đăng nhập / đăng ký -->
+<div id="authScreen" class="join-screen">
   <div class="join-card">
     <div class="join-mark">☕</div>
     <h1>Rôm Rả</h1>
-    <p class="join-sub">Vào phòng, nhắn vài câu, gửi vài tấm ảnh.</p>
-    <input id="nameInput" type="text" placeholder="Tên của bạn là gì?" maxlength="24" autocomplete="off" />
-    <button id="joinBtn">Vào phòng chat</button>
+    <p class="join-sub">Đăng nhập để vào phòng chat.</p>
+
+    <div class="auth-tabs">
+      <button type="button" id="tabLogin" class="auth-tab active">Đăng nhập</button>
+      <button type="button" id="tabRegister" class="auth-tab">Đăng ký</button>
+    </div>
+
+    <form id="loginForm" class="auth-form">
+      <input id="loginUsername" type="text" placeholder="Tên đăng nhập" maxlength="24" autocomplete="username" />
+      <input id="loginPassword" type="password" placeholder="Mật khẩu" autocomplete="current-password" />
+      <div id="loginError" class="auth-error hidden"></div>
+      <button type="submit" id="loginBtn">Đăng nhập</button>
+    </form>
+
+    <form id="registerForm" class="auth-form hidden">
+      <input id="registerUsername" type="text" placeholder="Tên đăng nhập (tối đa 24 ký tự)" maxlength="24" autocomplete="username" />
+      <input id="registerPassword" type="password" placeholder="Mật khẩu (tối thiểu 4 ký tự)" autocomplete="new-password" />
+      <div id="registerError" class="auth-error hidden"></div>
+      <button type="submit" id="registerBtn">Tạo tài khoản</button>
+    </form>
   </div>
 </div>
 
@@ -35,7 +52,10 @@
       <div class="sidebar-label">Đang online</div>
       <ul id="userList"></ul>
     </div>
-    <div class="sidebar-foot">Demo web chat · realtime</div>
+    <div class="sidebar-foot">
+      <span id="myNameLabel"></span>
+      <button id="logoutBtn" type="button">Đăng xuất</button>
+    </div>
   </aside>
 
   <main class="chat-main">
