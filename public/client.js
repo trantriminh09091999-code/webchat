@@ -154,6 +154,24 @@ async function uploadFile(file) {
   }
 }
 
+// ---- Dán ảnh bằng Ctrl+V ----
+textInput.addEventListener('paste', (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        pendingAttachment = { file };
+        attachName.textContent = '📎 Ảnh đã dán';
+        attachPreview.classList.remove('hidden');
+      }
+      e.preventDefault();
+      break;
+    }
+  }
+});
+
 attachBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
