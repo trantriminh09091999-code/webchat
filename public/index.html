@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rôm Rả — Chat với bạn bè</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Màn hình nhập tên -->
+<div id="joinScreen" class="join-screen">
+  <div class="join-card">
+    <div class="join-mark">☕</div>
+    <h1>Rôm Rả</h1>
+    <p class="join-sub">Vào phòng, nhắn vài câu, gửi vài tấm ảnh.</p>
+    <input id="nameInput" type="text" placeholder="Tên của bạn là gì?" maxlength="24" autocomplete="off" />
+    <button id="joinBtn">Vào phòng chat</button>
+  </div>
+</div>
+
+<!-- Giao diện chat chính -->
+<div id="chatScreen" class="chat-screen hidden">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="join-mark small">☕</div>
+      <div>
+        <h2>Rôm Rả</h2>
+        <span class="room-tag">phòng-chung</span>
+      </div>
+    </div>
+    <div class="sidebar-users">
+      <div class="sidebar-label">Đang online</div>
+      <ul id="userList"></ul>
+    </div>
+    <div class="sidebar-foot">Demo web chat · realtime</div>
+  </aside>
+
+  <main class="chat-main">
+    <header class="chat-header">
+      <button id="menuBtn" class="menu-btn" aria-label="Danh sách online">☰</button>
+      <div>
+        <h2>phòng-chung</h2>
+        <span id="typingIndicator" class="typing-indicator"></span>
+      </div>
+    </header>
+
+    <div id="messages" class="messages" aria-live="polite"></div>
+
+    <form id="composer" class="composer">
+      <button type="button" id="attachBtn" class="icon-btn" title="Gửi ảnh / video" aria-label="Đính kèm file">📎</button>
+      <input id="fileInput" type="file" accept="image/*,video/*" hidden />
+      <input id="textInput" type="text" placeholder="Nhắn gì đó, dán link cũng được…" autocomplete="off" />
+      <button type="submit" class="send-btn" aria-label="Gửi">Gửi</button>
+    </form>
+
+    <div id="attachPreview" class="attach-preview hidden">
+      <span id="attachName"></span>
+      <button type="button" id="cancelAttach">✕</button>
+    </div>
+  </main>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+</body>
+</html>
