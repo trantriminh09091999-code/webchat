@@ -1,19 +1,18 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const { Server } = require('socket.io');
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
 const PORT = process.env.PORT || 3000;
-
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
-
 // --- File upload setup (images / videos) ---
+fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, 'public', 'uploads')),
   filename: (req, file, cb) => {
@@ -30,7 +29,6 @@ const upload = multer({
     cb(ok ? null : new Error('Định dạng file không được hỗ trợ'), ok);
   }
 });
-
 app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Không có file' });
   res.json({
@@ -38,16 +36,13 @@ app.post('/upload', upload.single('file'), (req, res) => {
     type: req.file.mimetype.startsWith('video') ? 'video' : 'image'
   });
 });
-
 // --- In-memory state ---
 const MAX_HISTORY = 200;
 let history = [];
 const users = {}; // socket.id -> name
-
 function broadcastUserList() {
   io.emit('userList', Object.values(users));
 }
-
 io.on('connection', (socket) => {
   socket.on('join', (name) => {
     const clean = (name || 'Ẩn danh').toString().slice(0, 24).trim() || 'Ẩn danh';
@@ -56,7 +51,6 @@ io.on('connection', (socket) => {
     broadcastUserList();
     socket.broadcast.emit('message', systemMsg(`${clean} đã tham gia phòng chat`));
   });
-
   socket.on('chatMessage', (msg) => {
     const name = users[socket.id] || 'Ẩn danh';
     const entry = {
@@ -71,12 +65,10 @@ io.on('connection', (socket) => {
     if (history.length > MAX_HISTORY) history.shift();
     io.emit('message', entry);
   });
-
   socket.on('typing', (isTyping) => {
     const name = users[socket.id];
     if (name) socket.broadcast.emit('typing', { name, isTyping });
   });
-
   socket.on('disconnect', () => {
     const name = users[socket.id];
     if (name) {
@@ -86,7 +78,6 @@ io.on('connection', (socket) => {
     }
   });
 });
-
 function systemMsg(text) {
   return {
     id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
@@ -97,5 +88,4 @@ function systemMsg(text) {
     system: true
   };
 }
-
 server.listen(PORT, () => console.log(`Chat server running on port ${PORT}`));
