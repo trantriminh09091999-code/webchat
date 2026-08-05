@@ -92,13 +92,17 @@ function renderMessage(msg) {
   wrap.appendChild(meta);
   wrap.appendChild(bubble);
 
-  if (msg.attachment) {
+ if (msg.attachment) {
     const box = document.createElement('div');
     box.className = 'attachment';
     if (msg.attachment.type === 'video') {
       box.innerHTML = `<video src="${msg.attachment.url}" controls></video>`;
     } else {
-      box.innerHTML = `<img src="${msg.attachment.url}" alt="Ảnh đính kèm" />`;
+      const img = document.createElement('img');
+      img.src = msg.attachment.url;
+      img.alt = 'Ảnh đính kèm';
+      img.onload = scrollToBottom;
+      box.appendChild(img);
     }
     wrap.appendChild(box);
   }
