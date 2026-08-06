@@ -18,6 +18,19 @@ const registerError = document.getElementById('registerError');
 const myNameLabel = document.getElementById('myNameLabel');
 const logoutBtn = document.getElementById('logoutBtn');
 
+const groupList = document.getElementById('groupList');
+const groupCountLabel = document.getElementById('groupCountLabel');
+const createGroupBtn = document.getElementById('createGroupBtn');
+const quickAddGroupBtn = document.getElementById('quickAddGroupBtn');
+const createGroupModal = document.getElementById('createGroupModal');
+const newGroupName = document.getElementById('newGroupName');
+const createGroupError = document.getElementById('createGroupError');
+const cancelCreateGroup = document.getElementById('cancelCreateGroup');
+const confirmCreateGroup = document.getElementById('confirmCreateGroup');
+
+const currentGroupName = document.getElementById('currentGroupName');
+const currentGroupAvatar = document.getElementById('currentGroupAvatar');
+
 const messagesEl = document.getElementById('messages');
 const composer = document.getElementById('composer');
 const textInput = document.getElementById('textInput');
@@ -26,14 +39,16 @@ const fileInput = document.getElementById('fileInput');
 const attachPreview = document.getElementById('attachPreview');
 const attachName = document.getElementById('attachName');
 const cancelAttach = document.getElementById('cancelAttach');
-const userListEl = document.getElementById('userList');
 const typingIndicator = document.getElementById('typingIndicator');
 const menuBtn = document.getElementById('menuBtn');
 const sidebar = document.querySelector('.sidebar');
 
 let myName = '';
+let myToken = '';
 let pendingAttachment = null;
 let typingTimeout = null;
+let groups = [];
+let activeGroupId = null;
 
 // ---- Auth tabs ----
 tabLogin.addEventListener('click', () => {
@@ -49,126 +64,135 @@ tabRegister.addEventListener('click', () => {
   loginForm.classList.add('hidden');
 });
 
-function showAuthError(el, msg) {
-  el.textContent = msg;
-  el.classList.remove('hidden');
-}
-function hideAuthError(el) {
-  el.classList.add('hidden');
-}
+function showAuthError(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+function hideAuthError(el) { el.classList.add('hidden'); }
 
-// ---- Register ----
 registerForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideAuthError(registerError);
   const username = registerUsername.value.trim();
   const password = registerPassword.value;
-  if (!username || !password) {
-    showAuthError(registerError, 'Vui lòng nhập đủ tên và mật khẩu.');
-    return;
-  }
+  if (!username || !password) return showAuthError(registerError, 'Vui lòng nhập đủ tên và mật khẩu.');
   try {
     const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
-    if (!res.ok) {
-      showAuthError(registerError, data.error || 'Đăng ký thất bại.');
-      return;
-    }
-    localStorage.setItem('romra_token', data.token);
-    localStorage.setItem('romra_username', data.username);
+    if (!res.ok) return showAuthError(registerError, data.error || 'Đăng ký thất bại.');
+    localStorage.setItem('t4_token', data.token);
+    localStorage.setItem('t4_username', data.username);
     enterChat(data.username, data.token);
-  } catch (err) {
-    showAuthError(registerError, 'Lỗi kết nối máy chủ.');
-  }
+  } catch (err) { showAuthError(registerError, 'Lỗi kết nối máy chủ.'); }
 });
 
-// ---- Login ----
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideAuthError(loginError);
   const username = loginUsername.value.trim();
   const password = loginPassword.value;
-  if (!username || !password) {
-    showAuthError(loginError, 'Vui lòng nhập đủ tên và mật khẩu.');
-    return;
-  }
+  if (!username || !password) return showAuthError(loginError, 'Vui lòng nhập đủ tên và mật khẩu.');
   try {
     const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
-    if (!res.ok) {
-      showAuthError(loginError, data.error || 'Đăng nhập thất bại.');
-      return;
-    }
-    localStorage.setItem('romra_token', data.token);
-    localStorage.setItem('romra_username', data.username);
+    if (!res.ok) return showAuthError(loginError, data.error || 'Đăng nhập thất bại.');
+    localStorage.setItem('t4_token', data.token);
+    localStorage.setItem('t4_username', data.username);
     enterChat(data.username, data.token);
-  } catch (err) {
-    showAuthError(loginError, 'Lỗi kết nối máy chủ.');
-  }
+  } catch (err) { showAuthError(loginError, 'Lỗi kết nối máy chủ.'); }
 });
 
-// ---- Logout ----
 logoutBtn.addEventListener('click', () => {
-  localStorage.removeItem('romra_token');
-  localStorage.removeItem('romra_username');
+  localStorage.removeItem('t4_token');
+  localStorage.removeItem('t4_username');
   location.reload();
 });
 
 // ---- Enter chat ----
-function enterChat(name, token) {
+async function enterChat(name, token) {
   myName = name;
+  myToken = token;
   myNameLabel.textContent = name;
   authScreen.classList.add('hidden');
   chatScreen.classList.remove('hidden');
-  socket.emit('join', token);
+  socket.emit('auth', token);
+  await loadGroups();
   textInput.focus();
 }
 
-// ---- Auto login nếu đã có token lưu sẵn ----
 (function tryAutoLogin() {
-  const token = localStorage.getItem('romra_token');
-  const username = localStorage.getItem('romra_username');
-  if (token && username) {
-    enterChat(username, token);
-  }
+  const token = localStorage.getItem('t4_token');
+  const username = localStorage.getItem('t4_username');
+  if (token && username) enterChat(username, token);
 })();
 
 socket.on('authError', (msg) => {
-  localStorage.removeItem('romra_token');
-  localStorage.removeItem('romra_username');
+  localStorage.removeItem('t4_token');
+  localStorage.removeItem('t4_username');
   alert(msg);
   location.reload();
 });
 
 menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-// ---- Receiving ----
-socket.on('history', (history) => {
+// ---- Groups ----
+function groupInitials(name) {
+  const words = name.trim().split(/\s+/).slice(0, 2);
+  return words.map(w => w[0]).join('').toUpperCase();
+}
+
+async function loadGroups() {
+  try {
+    const res = await fetch('/api/groups', { headers: { Authorization: 'Bearer ' + myToken } });
+    groups = await res.json();
+    renderGroupList();
+    if (groups.length && !activeGroupId) {
+      selectGroup(groups[0]._id);
+    }
+  } catch (err) {
+    console.error('Không tải được danh sách nhóm', err);
+  }
+}
+
+function renderGroupList() {
+  groupCountLabel.textContent = `${groups.length} nhóm`;
+  groupList.innerHTML = '';
+  groups.forEach((g) => {
+    const li = document.createElement('li');
+    li.className = 'group-item' + (g._id === activeGroupId ? ' active' : '');
+    li.innerHTML = `<div class="group-avatar">${groupInitials(g.name)}</div><div class="group-name">${escapeHtml(g.name)}</div>`;
+    li.addEventListener('click', () => selectGroup(g._id));
+    groupList.appendChild(li);
+  });
+}
+
+function selectGroup(groupId) {
+  activeGroupId = groupId;
+  const g = groups.find((x) => x._id === groupId);
+  if (g) {
+    currentGroupName.textContent = g.name;
+    currentGroupAvatar.textContent = groupInitials(g.name);
+  }
+  renderGroupList();
   messagesEl.innerHTML = '';
-  history.forEach(renderMessage);
+  socket.emit('joinGroup', groupId);
+  sidebar.classList.remove('open');
+}
+
+socket.on('groupHistory', ({ groupId, messages }) => {
+  if (groupId !== activeGroupId) return;
+  messagesEl.innerHTML = '';
+  messages.forEach(renderMessage);
   scrollToBottom();
 });
 
 socket.on('message', (msg) => {
+  if (msg.groupId !== activeGroupId) return;
   renderMessage(msg);
   scrollToBottom();
-});
-
-socket.on('userList', (users) => {
-  userListEl.innerHTML = '';
-  users.forEach((u) => {
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="dot"></span>${escapeHtml(u)}`;
-    userListEl.appendChild(li);
-  });
 });
 
 let typingClearTimer = null;
@@ -180,16 +204,43 @@ socket.on('typing', ({ name, isTyping }) => {
   }
 });
 
+// ---- Modal tạo nhóm ----
+function openCreateGroupModal() {
+  newGroupName.value = '';
+  hideAuthError(createGroupError);
+  createGroupModal.classList.remove('hidden');
+  newGroupName.focus();
+}
+function closeCreateGroupModal() {
+  createGroupModal.classList.add('hidden');
+}
+createGroupBtn.addEventListener('click', openCreateGroupModal);
+quickAddGroupBtn.addEventListener('click', openCreateGroupModal);
+cancelCreateGroup.addEventListener('click', closeCreateGroupModal);
+
+confirmCreateGroup.addEventListener('click', async () => {
+  const name = newGroupName.value.trim();
+  if (!name) return showAuthError(createGroupError, 'Vui lòng nhập tên nhóm.');
+  try {
+    const res = await fetch('/api/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + myToken },
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    if (!res.ok) return showAuthError(createGroupError, data.error || 'Tạo nhóm thất bại.');
+    closeCreateGroupModal();
+    await loadGroups();
+    selectGroup(data._id);
+  } catch (err) {
+    showAuthError(createGroupError, 'Lỗi kết nối máy chủ.');
+  }
+});
+
 // ---- Rendering ----
 function renderMessage(msg) {
   const wrap = document.createElement('div');
-  wrap.className = 'msg' + (msg.system ? ' system' : msg.name === myName ? ' own' : '');
-
-  if (msg.system) {
-    wrap.textContent = msg.text;
-    messagesEl.appendChild(wrap);
-    return;
-  }
+  wrap.className = 'msg' + (msg.name === myName ? ' own' : '');
 
   const meta = document.createElement('div');
   meta.className = 'msg-meta';
@@ -237,15 +288,13 @@ function linkify(text) {
   });
 }
 
-function scrollToBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
+function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
 // ---- Sending ----
 composer.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = textInput.value.trim();
-  if (!text && !pendingAttachment) return;
+  if ((!text && !pendingAttachment) || !activeGroupId) return;
 
   let attachment = null;
   if (pendingAttachment) {
@@ -271,7 +320,6 @@ async function uploadFile(file) {
   }
 }
 
-// ---- Dán ảnh bằng Ctrl+V ----
 textInput.addEventListener('paste', (e) => {
   const items = e.clipboardData?.items;
   if (!items) return;
@@ -304,7 +352,6 @@ function clearAttachment() {
   attachPreview.classList.add('hidden');
 }
 
-// ---- Typing indicator ----
 textInput.addEventListener('input', () => {
   socket.emit('typing', true);
   clearTimeout(typingTimeout);
