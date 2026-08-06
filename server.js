@@ -29,14 +29,29 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
+const groupSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  createdBy: String,
+  createdAt: { type: Date, default: Date.now }
+});
+const Group = mongoose.model('Group', groupSchema);
+
 const messageSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
   name: String,
   text: String,
   attachment: { url: String, type: String },
-  time: { type: Date, default: Date.now },
-  system: { type: Boolean, default: false }
+  time: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', messageSchema);
+
+mongoose.connection.once('open', async () => {
+  const count = await Group.countDocuments();
+  if (count === 0) {
+    await Group.create({ name: 'Nhóm chung', createdBy: 'system' });
+    console.log('Đã tạo nhóm mặc định: Nhóm chung');
+  }
+});
 
 // ---- Cloudinary ----
 cloudinary.config({
@@ -47,7 +62,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'rom-ra-chat',
+    folder: '4-anh-tay-chat',
     resource_type: 'auto',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov']
   }
@@ -60,9 +75,22 @@ app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ url: req.file.path, type: isVideo ? 'video' : 'image' });
 });
 
-// ---- Auth ----
+// ---- Auth helpers ----
 function makeToken() {
   return crypto.randomBytes(24).toString('hex');
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Chưa đăng nhập' });
+    const user = await User.findOne({ token });
+    if (!user) return res.status(401).json({ error: 'Phiên hết hạn' });
+    req.user = user;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi máy chủ' });
+  }
 }
 
 app.post('/api/register', async (req, res) => {
@@ -113,67 +141,72 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
+// ---- Groups API ----
+app.get('/api/groups', requireAuth, async (req, res) => {
+  const groups = await Group.find().sort({ createdAt: 1 }).lean();
+  res.json(groups);
+});
+
+app.post('/api/groups', requireAuth, async (req, res) => {
+  const name = (req.body.name || '').toString().trim().slice(0, 40);
+  if (!name) return res.status(400).json({ error: 'Tên nhóm không được để trống' });
+  const group = await Group.create({ name, createdBy: req.user.username });
+  res.json(group);
+});
+
 // ---- Realtime ----
-const onlineUsers = {}; // socket.id -> name
-
-function broadcastUserList() {
-  io.emit('userList', Object.values(onlineUsers));
-}
-
 io.on('connection', (socket) => {
-  socket.on('join', async (token) => {
+  socket.on('auth', async (token) => {
     try {
       const user = await User.findOne({ token });
       if (!user) {
         socket.emit('authError', 'Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.');
         return;
       }
-      const name = user.username;
-      socket.data.name = name;
-      onlineUsers[socket.id] = name;
-
-      const history = await Message.find().sort({ time: 1 }).limit(200).lean();
-      socket.emit('history', history);
-      broadcastUserList();
-      socket.broadcast.emit('message', await systemMsg(`${name} đã tham gia phòng chat`));
+      socket.data.name = user.username;
+      socket.emit('authOk', { username: user.username });
     } catch (err) {
       socket.emit('authError', 'Lỗi kết nối máy chủ.');
     }
   });
 
+  socket.on('joinGroup', async (groupId) => {
+    if (!socket.data.name) return;
+    try {
+      if (socket.data.currentGroup) {
+        socket.leave(`group:${socket.data.currentGroup}`);
+      }
+      socket.data.currentGroup = groupId;
+      socket.join(`group:${groupId}`);
+      const history = await Message.find({ groupId }).sort({ time: 1 }).limit(200).lean();
+      socket.emit('groupHistory', { groupId, messages: history });
+    } catch (err) {
+      // groupId không hợp lệ, bỏ qua
+    }
+  });
+
   socket.on('chatMessage', async (msg) => {
     const name = socket.data.name;
-    if (!name) return;
+    const groupId = socket.data.currentGroup;
+    if (!name || !groupId) return;
     const entry = {
+      groupId,
       name,
       text: (msg.text || '').toString().slice(0, 2000),
       attachment: msg.attachment || null,
-      time: new Date(),
-      system: false
+      time: new Date()
     };
     const saved = await Message.create(entry);
-    io.emit('message', saved.toObject());
+    io.to(`group:${groupId}`).emit('message', saved.toObject());
   });
 
   socket.on('typing', (isTyping) => {
     const name = socket.data.name;
-    if (name) socket.broadcast.emit('typing', { name, isTyping });
-  });
-
-  socket.on('disconnect', async () => {
-    const name = socket.data.name;
-    if (name) {
-      delete onlineUsers[socket.id];
-      broadcastUserList();
-      io.emit('message', await systemMsg(`${name} đã rời phòng chat`));
+    const groupId = socket.data.currentGroup;
+    if (name && groupId) {
+      socket.to(`group:${groupId}`).emit('typing', { name, isTyping });
     }
   });
 });
-
-async function systemMsg(text) {
-  const entry = { name: 'Hệ thống', text, attachment: null, time: new Date(), system: true };
-  const saved = await Message.create(entry);
-  return saved.toObject();
-}
 
 server.listen(PORT, () => console.log(`Chat server running on port ${PORT}`));
