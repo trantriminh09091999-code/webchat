@@ -48,7 +48,6 @@ const menuBtn = document.getElementById('menuBtn');
 const sidebar = document.querySelector('.sidebar');
 const sendBtn = document.getElementById('sendBtn');
 
-// Settings panel elements
 const groupSettingsOverlay = document.getElementById('groupSettingsOverlay');
 const closeGroupSettings = document.getElementById('closeGroupSettings');
 const muteToggle = document.getElementById('muteToggle');
@@ -76,7 +75,6 @@ let activeGroupId = null;
 let activeGroupData = null;
 let pinnedMessages = [];
 
-// ---- Auth tabs ----
 tabLogin.addEventListener('click', () => {
   tabLogin.classList.add('active');
   tabRegister.classList.remove('active');
@@ -163,7 +161,6 @@ socket.on('authError', (msg) => {
 
 menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-// ---- Groups ----
 function groupInitials(name) {
   const words = name.trim().split(/\s+/).slice(0, 2);
   return words.map((w) => w[0]).join('').toUpperCase();
@@ -289,7 +286,6 @@ socket.on('typing', ({ name, isTyping }) => {
   }
 });
 
-// ---- Modal tạo nhóm ----
 function openCreateGroupModal() {
   newGroupName.value = '';
   hideAuthError(createGroupError);
@@ -318,7 +314,6 @@ confirmCreateGroup.addEventListener('click', async () => {
   } catch (err) { showAuthError(createGroupError, 'Lỗi kết nối máy chủ.'); }
 });
 
-// ---- Panel cài đặt nhóm ----
 groupSettingsBtn.addEventListener('click', openGroupSettings);
 closeGroupSettings.addEventListener('click', () => groupSettingsOverlay.classList.add('hidden'));
 
@@ -338,7 +333,9 @@ muteToggle.addEventListener('change', () => {
   setMuted(activeGroupId, muteToggle.checked);
 });
 
+// ---- Lưu biệt danh (đã sửa: báo rõ kết quả) ----
 saveNicknameBtn.addEventListener('click', async () => {
+  const original = saveNicknameBtn.textContent;
   try {
     const res = await fetch(`/api/groups/${activeGroupId}/nickname`, {
       method: 'POST',
@@ -346,8 +343,19 @@ saveNicknameBtn.addEventListener('click', async () => {
       body: JSON.stringify({ nickname: nicknameInput.value.trim() })
     });
     const data = await res.json();
-    if (res.ok) activeGroupData = data;
-  } catch (err) { /* im lặng */ }
+    if (res.ok) {
+      activeGroupData = data;
+      const idx = groups.findIndex((g) => g._id === data._id);
+      if (idx >= 0) groups[idx] = data;
+      renderMemberList();
+      saveNicknameBtn.textContent = 'Đã lưu ✓';
+      setTimeout(() => (saveNicknameBtn.textContent = original), 1500);
+    } else {
+      alert(data.error || 'Lưu thất bại.');
+    }
+  } catch (err) {
+    alert('Lỗi kết nối máy chủ.');
+  }
 });
 
 function renderMemberList() {
@@ -452,7 +460,6 @@ deleteGroupBtn.addEventListener('click', async () => {
   } catch (err) { alert('Lỗi kết nối máy chủ.'); }
 });
 
-// ---- Rendering tin nhắn ----
 function renderMessage(msg) {
   const wrap = document.createElement('div');
   wrap.className = 'msg' + (msg.name === myName ? ' own' : '');
@@ -511,7 +518,6 @@ function linkify(text) {
 
 function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
-// ---- Gửi tin nhắn (đã sửa: khóa nút khi đang gửi, chỉ cần bấm 1 lần) ----
 composer.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (isSending) return;
