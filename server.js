@@ -57,11 +57,18 @@ mongoose.connection.once('open', async () => {
   try {
     const count = await Group.countDocuments();
     if (count === 0) {
-      await Group.create({ name: 'Nhóm chung', createdBy: 'system' });
+      await Group.create({ name: 'Nhóm chung', createdBy: 'system', members: [] });
       console.log('Đã tạo nhóm mặc định: Nhóm chung');
     }
+    const broken = await Group.find({ members: { $exists: false } });
+    for (const g of broken) {
+      g.members = g.createdBy && g.createdBy !== 'system' ? [g.createdBy] : [];
+      g.nicknames = g.nicknames || {};
+      await g.save();
+    }
+    if (broken.length) console.log(`Đã vá dữ liệu cho ${broken.length} nhóm cũ`);
   } catch (err) {
-    console.error('Lỗi tạo nhóm mặc định:', err.message);
+    console.error('Lỗi tạo/vá nhóm:', err.message);
   }
 });
 
