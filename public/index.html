@@ -1,45 +1,157 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#111827">
-<title>4 Anh Tày — Chat nhóm</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b111c">
+  <meta name="description" content="4 Anh Tày Squad OS — chat realtime, lên kèo và lưu kỷ niệm cho hội bạn.">
+  <title>4 Anh Tày — Squad OS</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="toast" class="toast hidden"></div>
-<section id="authScreen" class="auth-screen">
-  <div class="auth-card">
-    <div class="brand-logo">4T</div><h1>4 Anh Tày</h1><p>Chat, lưu kỷ niệm và lên kèo cùng anh em.</p>
-    <div class="auth-tabs"><button id="tabLogin" class="active">Đăng nhập</button><button id="tabRegister">Đăng ký</button></div>
-    <form id="loginForm" class="auth-form"><input id="loginUsername" placeholder="Tên đăng nhập"><input id="loginPassword" type="password" placeholder="Mật khẩu"><div id="loginError" class="error hidden"></div><button>Đăng nhập</button></form>
-    <form id="registerForm" class="auth-form hidden"><input id="registerUsername" placeholder="Tên đăng nhập"><input id="registerPassword" type="password" placeholder="Mật khẩu tối thiểu 6 ký tự"><div id="registerError" class="error hidden"></div><button>Tạo tài khoản</button></form>
+  <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v11H8l-4 3v-14Z"/><path d="M8 9h8M8 13h5"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 2-2 5 5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.7-3.4 2.5-5 5.5-5s4.8 1.6 5.5 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14.5c2.8-.4 4.5 1 5 3.5"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 6h14a2 2 0 0 1 2 2v10H5a2 2 0 0 1-2-2V6.8A1.8 1.8 0 0 1 4.8 5H17"/><path d="M15 11h6v4h-6a2 2 0 0 1 0-4Z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20h4"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="m14 4 6 6-3 1-4 4-1 5-2-2-2-2-4-2 5-1 4-4 1-3Z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 18 3 20V6l6-2 6 2 6-2v14l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m3 4 18 8-18 8 4-8-4-8Z"/><path d="M7 12h14"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m8 12 6-6a4 4 0 0 1 6 6l-8 8a6 6 0 0 1-8-8l8-8"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0M8 16a6 6 0 0 1 8 0M11 19.5a2 2 0 0 1 2 0"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></symbol>
+    <symbol id="i-cake" viewBox="0 0 24 24"><path d="M5 11h14v9H5zM3 14h18"/><path d="M8 11V8M12 11V7M16 11V8"/><path d="M8 6c1-1 1-2 0-3M12 5c1-1 1-2 0-3M16 6c1-1 1-2 0-3"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
+    <symbol id="i-vote" viewBox="0 0 24 24"><path d="M5 9h14l2 4v7H3v-7l2-4Z"/><path d="m8 9 4-5 4 5M8 15h8"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  </svg>
+
+  <section class="auth-shell" id="authScreen" aria-label="Đăng nhập 4 Anh Tày">
+    <div class="auth-visual">
+      <div class="auth-orb auth-orb-one"></div><div class="auth-orb auth-orb-two"></div>
+      <div class="auth-brand"><div class="brand-mark auth-mark">4T</div><div><strong>4 Anh Tày</strong><span>Squad OS · Không gian riêng của hội</span></div></div>
+      <div class="auth-hero">
+        <span class="eyebrow"><span class="pulse-dot"></span>PHÒNG RIÊNG CỦA ANH EM</span>
+        <h1>Chat, lên kèo và giữ lại<br>những chuyện chỉ hội mình hiểu.</h1>
+        <p>Một nơi duy nhất để nhắn tin realtime, chốt lịch chơi game, lưu ảnh kỷ niệm và quản lý nhóm mà không bị rối.</p>
+      </div>
+      <div class="auth-floating-card auth-float-one"><span>🎮</span><div><strong>Kèo rank tối thứ Sáu</strong><small>3/4 đã xác nhận</small></div></div>
+      <div class="auth-floating-card auth-float-two"><span>📸</span><div><strong>18 ảnh mới</strong><small>Sẵn sàng gom thành album</small></div></div>
+      <div class="auth-proof"><div class="avatar-stack"><div class="avatar a1">TL</div><div class="avatar a2">TB</div><div class="avatar a3">TLa</div><div class="avatar a4">TU</div></div><span>Không gian nhỏ, riêng tư, đúng chất hội bạn.</span></div>
+    </div>
+    <div class="auth-panel">
+      <div class="auth-card-pro">
+        <div class="auth-mobile-logo"><div class="brand-mark">4T</div><div><strong>4 Anh Tày</strong><span>Squad OS</span></div></div>
+        <span class="auth-kicker">CHÀO MỪNG TRỞ LẠI</span>
+        <h2 id="authTitle">Vào phòng của hội</h2>
+        <p id="authSubtitle">Đăng nhập để tiếp tục cuộc trò chuyện và các kèo đang chờ.</p>
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="active" id="tabLogin">Đăng nhập</button>
+          <button type="button" id="tabRegister">Tạo tài khoản</button>
+        </div>
+        <form class="auth-form" id="loginForm">
+          <label><span>Tên đăng nhập</span><input id="loginUsername" autocomplete="username" maxlength="24" placeholder="Ví dụ: taylon" required></label>
+          <label><span>Mật khẩu</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required></label>
+          <div class="auth-error hidden" id="loginError"></div>
+          <button class="btn primary full auth-submit" id="loginBtn" type="submit"><span>Đăng nhập</span><svg class="icon sm"><use href="#i-arrow"/></svg></button>
+        </form>
+        <form class="auth-form hidden" id="registerForm">
+          <label><span>Tên đăng nhập</span><input id="registerUsername" autocomplete="username" maxlength="24" placeholder="Từ 2 đến 24 ký tự" required></label>
+          <label><span>Mật khẩu</span><input id="registerPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Tối thiểu 6 ký tự" required></label>
+          <div class="auth-error hidden" id="registerError"></div>
+          <button class="btn primary full auth-submit" id="registerBtn" type="submit"><span>Tạo tài khoản</span><svg class="icon sm"><use href="#i-arrow"/></svg></button>
+        </form>
+        <div class="auth-note"><svg class="icon sm"><use href="#i-shield"/></svg><span>Mật khẩu được băm trước khi lưu. Ảnh và video được tải lên Cloudinary.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connection-banner" id="connectionBanner"><div class="spinner"></div><span id="connectionText">Đang kết nối lại máy chủ…</span></div>
+
+  <div class="app-shell hidden" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">4T</div><div><div class="brand-title">4 Anh Tày</div><div class="brand-sub">Squad OS · Riêng tư cho hội</div></div></div>
+      <div class="side-label">Không gian</div>
+      <nav class="nav-list" aria-label="Điều hướng chính">
+        <button class="nav-btn active" data-view="home"><svg class="icon"><use href="#i-home"/></svg><span>Trang chủ</span></button>
+        <button class="nav-btn" data-view="chat"><svg class="icon"><use href="#i-chat"/></svg><span>Chat hội</span><span class="nav-badge" id="chatBadge">0</span></button>
+        <button class="nav-btn" data-view="events"><svg class="icon"><use href="#i-calendar"/></svg><span>Kèo & sự kiện</span></button>
+        <button class="nav-btn" data-view="memories"><svg class="icon"><use href="#i-image"/></svg><span>Kho kỷ niệm</span></button>
+        <button class="nav-btn" data-view="members"><svg class="icon"><use href="#i-users"/></svg><span>Thành viên</span></button>
+      </nav>
+      <div class="side-label">Tiện ích</div>
+      <nav class="nav-list">
+        <button class="nav-btn" data-view="fund"><svg class="icon"><use href="#i-wallet"/></svg><span>Quỹ nhóm</span></button>
+        <button class="nav-btn" data-view="settings"><svg class="icon"><use href="#i-settings"/></svg><span>Cài đặt</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="squad-mini">
+          <div class="mini-row"><div class="mini-copy"><strong id="sidebarRoomTitle">Phòng đang mở</strong><span id="sidebarOnlineText">Đang kết nối…</span></div><span class="online-dot" id="sidebarOnlineDot"></span></div>
+          <div class="avatar-stack" id="sidebarAvatarStack"></div>
+        </div>
+        <button class="profile-mini" id="profileSideBtn" type="button">
+          <div class="avatar large a1" id="myAvatar">4T</div>
+          <div><strong id="myNameLabel">Tài khoản</strong><span>Hồ sơ & cài đặt</span></div>
+          <svg class="icon sm"><use href="#i-settings"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar"><div class="topbar-title"><h1 id="pageTitle">Squad Command Center</h1><p id="pageSubtitle">Chuyện quan trọng của hội, gói gọn trong một màn hình</p></div><div class="top-actions"><button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" aria-label="Mở menu"><svg class="icon"><use href="#i-menu"/></svg></button><button class="icon-btn" id="searchBtn" aria-label="Tìm kiếm"><svg class="icon"><use href="#i-search"/></svg></button><button class="icon-btn" id="notificationBtn" aria-label="Thông báo"><svg class="icon"><use href="#i-bell"/></svg><span class="alert-dot"></span></button><button class="icon-btn" id="themeBtn" aria-label="Đổi giao diện"><svg class="icon"><use href="#i-sun"/></svg></button><div class="status-pill"><span class="online-dot"></span><strong id="topOnlineCount">0 online</strong></div><button class="avatar a1 online profile-top-btn" id="profileTopBtn" title="Tài khoản của bạn" aria-label="Mở hồ sơ">4T</button></div></header>
+
+      <main class="content">
+        <div class="demo-strip hidden" aria-label="Chuyển trạng thái giao diện demo"><span class="demo-strip-label">Dynamic UI</span></div>
+
+        <section class="view active" id="view-home">
+          <div class="home-layout"><div class="home-main">
+            <article class="hero card"><div class="hero-copy"><span class="eyebrow"><span class="pulse-dot"></span>PHÒNG RIÊNG ĐÃ SẴN SÀNG</span><h2 id="heroTitle">Chào mừng trở lại với hội.</h2><p id="heroDescription">Chat realtime, lịch hẹn và kỷ niệm của nhóm sẽ được đồng bộ tại đây.</p><div class="hero-meta"><span class="meta-item"><svg class="icon sm"><use href="#i-chat"/></svg><span id="heroMessageMeta">Tin nhắn realtime</span></span><span class="meta-item"><svg class="icon sm"><use href="#i-calendar"/></svg><span id="heroEventMeta">Lịch kèo chung</span></span><span class="meta-item"><svg class="icon sm"><use href="#i-image"/></svg><span id="heroMemoryMeta">Kho kỷ niệm</span></span></div><div class="hero-actions"><button class="btn primary" data-go-view="chat"><svg class="icon sm"><use href="#i-chat"/></svg>Mở chat hội</button><button class="btn secondary" data-go-view="events"><svg class="icon sm"><use href="#i-calendar"/></svg>Lên kèo mới</button></div></div><div class="hero-side"><div class="countdown-card"><div class="count-label">Tổng quan nhóm đang chọn</div><div class="count-grid"><div class="count-unit"><strong id="countGroups">0</strong><span>Nhóm</span></div><div class="count-unit"><strong id="countOnline">0</strong><span>Online</span></div><div class="count-unit"><strong id="countEvents">0</strong><span>Kèo</span></div><div class="count-unit"><strong id="countMembers">0</strong><span>Người</span></div></div><div class="attendee-line"><div class="attendee-copy"><strong id="countdownTitle">Chưa chọn nhóm</strong><span id="countdownSubtitle">Mở chat để bắt đầu</span></div><div class="avatar-stack" id="heroAvatarStack"></div></div></div></div></article>
+            <div class="stats-grid"><article class="stat-card"><div class="stat-top"><span>Đang online</span><div class="stat-icon"><svg class="icon sm"><use href="#i-users"/></svg></div></div><strong class="stat-value" id="homeOnlineStat">0/0</strong><div class="stat-note">Trong toàn hệ thống</div></article><article class="stat-card"><div class="stat-top"><span>Kèo sắp tới</span><div class="stat-icon"><svg class="icon sm"><use href="#i-calendar"/></svg></div></div><strong class="stat-value" id="homeEventStat">00</strong><div class="stat-note">Của nhóm đang chọn</div></article><article class="stat-card"><div class="stat-top"><span>Kỷ niệm</span><div class="stat-icon"><svg class="icon sm"><use href="#i-image"/></svg></div></div><strong class="stat-value" id="homeMemoryStat">00</strong><div class="stat-note">Ảnh/video đã đánh dấu</div></article><article class="stat-card"><div class="stat-top"><span>Nhóm chat</span><div class="stat-icon"><svg class="icon sm"><use href="#i-chat"/></svg></div></div><strong class="stat-value" id="homeGroupStat">00</strong><div class="stat-note">Bạn đang tham gia</div></article></div>
+            <div class="two-col"><article class="card event-mini"><div class="card-head"><div><h3 class="card-title">Kèo gần nhất</h3><p class="card-sub">Được đồng bộ từ lịch nhóm</p></div><button class="text-btn" data-go-view="events">Xem lịch</button></div><div class="event-title-row"><div class="date-block"><strong id="homeEventDay">--</strong><span id="homeEventMonth">Tháng</span></div><div class="event-title"><h3 id="homeEventTitle">Chưa có kèo</h3><p id="homeEventInfo">Tạo một lịch mới để anh em xác nhận.</p></div></div><div class="hero-actions"><button class="btn primary small" data-go-view="events"><svg class="icon sm"><use href="#i-plus"/></svg>Tạo hoặc xem kèo</button></div></article><article class="card chat-preview"><div class="card-head"><div><h3 class="card-title">Chat nhanh</h3><p class="card-sub" id="homeChatSubtitle">Chọn nhóm để trò chuyện</p></div><button class="text-btn" data-go-view="chat">Mở toàn màn hình</button></div><div class="message-list compact" id="homeMessagePreview"><div class="empty-mini">Tin nhắn mới sẽ hiển thị tại đây.</div></div><div class="quick-composer"><input class="input" id="homeQuickInput" placeholder="Nhắn nhanh cho nhóm đang chọn…"><button class="icon-btn" id="homeQuickSend"><svg class="icon sm"><use href="#i-send"/></svg></button></div></article></div>
+          </div><aside class="home-rail"><article class="card card-pad"><div class="card-head"><div><h3 class="card-title">Ai đang trong phòng</h3><p class="card-sub">Trạng thái realtime</p></div></div><div class="online-list" id="homeOnlineList"><div class="empty-mini">Chưa có ai trực tuyến.</div></div></article><article class="card card-pad"><div class="card-head"><div><h3 class="card-title">Khoảnh khắc gần đây</h3><p class="card-sub">Media được đánh dấu là kỷ niệm</p></div></div><div id="homeMemoryPreview"><div class="memory-visual"><div class="memory-overlay"><strong>Chưa có kỷ niệm</strong><span>Nhấn 💫 dưới ảnh trong chat</span></div></div></div></article><article class="card card-pad"><div class="card-head"><div><h3 class="card-title">Gợi ý cho hội</h3><p class="card-sub">Không ép tương tác</p></div></div><div class="quote-card">Lên một kèo ngắn, hoặc gửi lại ảnh cũ để cả hội nhớ chuyện hôm đó.<span>Squad OS</span></div></article></aside></div>
+        </section>
+
+        <section class="view" id="view-chat"><div class="chat-layout card"><aside class="chat-pane channels"><div class="pane-head pane-head-row"><div><h3>Nhóm của bạn</h3><p id="groupCountText">Đang tải danh sách nhóm…</p></div><button class="icon-btn" id="createGroupBtn" aria-label="Tạo nhóm"><svg class="icon sm"><use href="#i-plus"/></svg></button></div><div class="channel-list group-channel-list" id="groupList"></div><button class="btn ghost full small create-group-inline" id="quickCreateGroupBtn"><svg class="icon sm"><use href="#i-plus"/></svg>Tạo nhóm mới</button><div class="side-label">Trạng thái</div><div class="channel-list"><button class="channel active-status"><span class="online-dot"></span><span id="connectionSideText">Đang kết nối realtime</span></button></div></aside><div class="chat-center"><div class="chat-header"><div class="chat-header-main"><div class="avatar a2 online" id="currentGroupAvatar">#</div><div><h3 id="currentGroupName">Chọn một nhóm</h3><p id="currentGroupStatus">Tin nhắn realtime và lịch sử được lưu trên MongoDB</p></div></div><div class="top-actions"><button class="icon-btn" id="chatSearchBtn" aria-label="Tìm trong chat"><svg class="icon"><use href="#i-search"/></svg></button><button class="icon-btn" id="groupOptionsBtn" aria-label="Thông tin nhóm"><svg class="icon"><use href="#i-more"/></svg></button></div></div><div class="pinned-chat-bar hidden" id="pinnedChatBar"></div><div class="chat-messages" id="chatMessages" aria-live="polite"><div class="chat-empty"><svg class="icon lg"><use href="#i-chat"/></svg><h3>Chọn nhóm để bắt đầu</h3><p>Tin nhắn mới sẽ xuất hiện tại đây.</p></div></div><div class="typing hidden" id="typingIndicator"><div class="typing-dots"><i></i><i></i><i></i></div><span></span></div><div class="composer"><div class="upload-tray hidden" id="uploadTray"><div class="upload-row"><div class="upload-thumb" id="uploadThumb"><svg class="icon"><use href="#i-image"/></svg></div><div class="upload-info"><strong id="uploadName">Ảnh đính kèm</strong><span id="uploadStatus">Sẵn sàng gửi</span><div class="progress" style="margin-top:6px"><span id="uploadProgress" style="width:0%"></span></div></div><button class="icon-btn" id="cancelUpload" type="button" aria-label="Bỏ tệp"><svg class="icon sm"><use href="#i-x"/></svg></button></div></div><form class="composer-box" id="chatForm"><input type="file" id="fileInput" class="sr-only" accept="image/*,video/*"><button class="icon-btn" type="button" id="attachBtn" aria-label="Đính kèm ảnh hoặc video"><svg class="icon"><use href="#i-paperclip"/></svg></button><textarea id="chatInput" rows="1" maxlength="2000" placeholder="Nhắn cho cả hội…"></textarea><button class="icon-btn send-live-btn" id="sendChatBtn" type="submit" aria-label="Gửi tin"><svg class="icon"><use href="#i-send"/></svg></button></form><div class="composer-footnote">Enter để gửi · Shift + Enter xuống dòng · Dán ảnh bằng Ctrl + V · Tối đa 25 MB</div></div></div><aside class="chat-pane member-info"><div class="pane-head"><h3>Trong nhóm</h3><p id="memberPaneSubtitle">Chưa chọn nhóm</p></div><div class="member-panel"><div class="online-list" id="memberPaneList"><div class="empty-mini">Chọn nhóm để xem thành viên.</div></div><h4>Tin đã ghim</h4><div id="pinnedPreview" class="quote-card muted-quote">Chưa có tin nhắn được ghim.</div><button class="btn ghost full small" style="margin-top:13px" id="openGroupInfoBtn"><svg class="icon sm"><use href="#i-settings"/></svg>Quản lý nhóm</button></div></aside></div></section>
+
+        <section class="view" id="view-events"><div class="section-head"><div><h2>Kèo & sự kiện</h2><p>Tạo lịch chơi game, đi chơi, xác nhận tham gia và theo dõi ngay trong nhóm đang chọn.</p></div><div class="section-actions"><button class="btn secondary" id="quickPollEvent"><svg class="icon sm"><use href="#i-vote"/></svg>Bình chọn thử nghiệm</button><button class="btn primary" id="createEventBtn"><svg class="icon sm"><use href="#i-plus"/></svg>Tạo kèo mới</button></div></div><div class="event-grid"><article class="event-hero card" id="eventHeroCard"><div class="event-hero-content"><span class="eyebrow"><span class="pulse-dot"></span><span id="eventHeroEyebrow">Chưa có kèo</span></span><h2 id="eventHeroTitle">Tạo kèo đầu tiên cho nhóm</h2><p id="eventHeroDescription">Chọn ngày giờ, địa điểm và để anh em xác nhận tham gia.</p><div class="event-info-grid"><div class="info-box"><span>Thời gian</span><strong id="eventTime">Chưa chốt</strong></div><div class="info-box"><span>Địa điểm</span><strong id="eventLocation">Chưa chốt</strong></div><div class="info-box"><span>Tham gia</span><strong id="eventParticipants">0 người</strong></div></div><div class="hero-actions"><button class="btn primary" id="openEventMode"><svg class="icon sm"><use href="#i-activity"/></svg>Mở Event Mode</button><button class="btn secondary" data-go-view="chat"><svg class="icon sm"><use href="#i-chat"/></svg>Chat trong nhóm</button></div></div></article><article class="card rsvp-card"><div class="card-head"><div><h3 class="card-title">Phản hồi của bạn</h3><p class="card-sub" id="rsvpHint">Chọn một kèo sắp tới để phản hồi</p></div><span class="tag">RSVP</span></div><div class="rsvp-options"><button class="rsvp-option" data-rsvp="join">✓ Tham gia</button><button class="rsvp-option" data-rsvp="skip">× Không tham gia</button></div><div class="avatar-stack" id="eventAvatarStack" style="margin-top:18px"></div><p class="card-sub" id="rsvpSummary" style="margin-top:10px">Chưa có phản hồi.</p></article></div><article class="card card-pad" style="margin-top:18px"><div class="card-head"><div><h3 class="card-title">Lịch kèo của nhóm</h3><p class="card-sub">Dữ liệu thật được lưu trong MongoDB</p></div><span class="tag open" id="eventCountTag">0 kèo</span></div><div class="event-list" id="eventList"><div class="empty-live"><svg class="icon lg"><use href="#i-calendar"/></svg><p>Chưa có lịch hẹn nào.</p></div></div></article></section>
+
+        <section class="view" id="view-memories"><div class="section-head"><div><h2>Kho kỷ niệm</h2><p>Ảnh và video được thành viên chủ động đánh dấu bằng nút 💫 trong chat.</p></div><div class="section-actions"><button class="btn secondary" id="refreshMemoriesBtn"><svg class="icon sm"><use href="#i-activity"/></svg>Làm mới</button><button class="btn primary" id="addMemoryBtn"><svg class="icon sm"><use href="#i-plus"/></svg>Chọn từ chat</button></div></div><div class="memory-grid" id="memoryGrid"><div class="empty-live"><svg class="icon lg"><use href="#i-image"/></svg><p>Chưa có kỷ niệm nào được lưu.</p></div></div><div class="section-head" style="margin-top:30px"><div><h2 style="font-size:19px">Dòng thời gian của hội</h2><p>Các khoảnh khắc được sắp theo thời gian gửi, không tự đọc nội dung riêng tư.</p></div></div><div class="timeline" id="memoryTimeline"><div class="timeline-item"><time>Hôm nay</time><h3>Kho kỷ niệm đã sẵn sàng</h3><p>Vào chat, nhấn 💫 dưới ảnh hoặc video để lưu vào đây.</p></div></div></section>
+
+        <section class="view" id="view-members"><div class="section-head"><div><h2>Thành viên của nhóm</h2><p>Avatar, tên hiển thị, biệt danh và vai trò được đồng bộ từ tài khoản thật.</p></div><div class="section-actions"><button class="btn secondary" id="openGroupPermissions"><svg class="icon sm"><use href="#i-shield"/></svg>Quản lý nhóm</button><button class="btn primary" id="inviteMemberBtn"><svg class="icon sm"><use href="#i-plus"/></svg>Thêm thành viên</button></div></div><div class="member-grid" id="memberGrid"><div class="empty-live"><svg class="icon lg"><use href="#i-users"/></svg><p>Chọn một nhóm để xem thành viên.</p></div></div></section>
+
+        <section class="view" id="view-fund"><div class="section-head"><div><h2>Quỹ nhóm & chia tiền</h2><p>Phần giao diện thử nghiệm, chưa kết nối thanh toán thật.</p></div></div><div class="fund-grid"><article class="card balance-card"><span class="tag open">Prototype</span><div class="balance">0đ</div><p class="card-sub">Số dư nhóm hiện chưa có backend. Có thể phát triển ở vòng tiếp theo.</p><div class="hero-actions"><button class="btn secondary" id="fundIdeaBtn"><svg class="icon sm"><use href="#i-plus"/></svg>Ghi khoản chi demo</button></div></article><article class="card card-pad"><div class="card-head"><div><h3 class="card-title">Ý tưởng chia tiền</h3><p class="card-sub">Dành cho chuyến đi và kèo ăn uống</p></div></div><div class="expense-list"><div class="expense"><div class="expense-icon">₫</div><div class="expense-copy"><strong>Chia đều theo người tham gia</strong><span>Lấy danh sách RSVP từ sự kiện</span></div></div><div class="expense"><div class="expense-icon">✓</div><div class="expense-copy"><strong>Đánh dấu đã trả</strong><span>Không cần tích hợp ngân hàng ở bản đầu</span></div></div></div></article></div></section>
+
+        <section class="view" id="view-settings"><div class="section-head"><div><h2>Hồ sơ & cài đặt</h2><p>Đổi tên hiển thị, avatar, giao diện và quyền thông báo của tài khoản.</p></div></div><div class="settings-grid"><article class="card settings-card profile-settings-card"><div class="card-head"><div><h3 class="card-title">Hồ sơ cá nhân</h3><p class="card-sub">Tên đăng nhập không đổi; tên hiển thị có thể thay đổi</p></div></div><div class="profile-edit-head"><button class="avatar xl a1 avatar-upload-btn" id="profileAvatarBtn" type="button">4T</button><div><strong id="profileUsernameLabel">@taikhoan</strong><span>Nhấn avatar để chọn ảnh mới</span></div><input type="file" id="profileAvatarInput" class="sr-only" accept="image/*"></div><div class="field" style="margin-top:16px"><label for="profileDisplayName">Tên hiển thị</label><input class="input" id="profileDisplayName" maxlength="32" placeholder="Tên mà anh em sẽ nhìn thấy"></div><button class="btn primary full" id="saveProfileBtn" style="margin-top:16px"><svg class="icon sm"><use href="#i-check"/></svg>Lưu hồ sơ</button></article><article class="card settings-card"><div class="card-head"><div><h3 class="card-title">Trải nghiệm</h3><p class="card-sub">Được đồng bộ theo tài khoản</p></div></div><div class="setting-row"><div class="setting-copy"><strong>Giao diện</strong><span>Sáng, tối hoặc theo hệ thống.</span></div><select class="input setting-select" id="themeSelect"><option value="system">Theo hệ thống</option><option value="dark">Tối</option><option value="light">Sáng</option></select></div><div class="setting-row"><div class="setting-copy"><strong>Giảm chuyển động</strong><span>Tắt animation không thiết yếu trên thiết bị này.</span></div><label class="switch"><input type="checkbox" id="motionSwitch"><span class="slider"></span></label></div><div class="setting-row"><div class="setting-copy"><strong>Hiển thị gọn</strong><span>Giảm khoảng cách trong chat.</span></div><label class="switch"><input type="checkbox" id="compactSwitch"><span class="slider"></span></label></div><div class="setting-row"><div class="setting-copy"><strong>Âm thanh</strong><span>Âm báo nhẹ khi có tin nhắn mới.</span></div><label class="switch"><input type="checkbox" id="soundSwitch"><span class="slider"></span></label></div><div class="setting-row"><div class="setting-copy"><strong>Thông báo máy tính</strong><span>Chỉ hiện khi trình duyệt cho phép.</span></div><label class="switch"><input type="checkbox" id="notificationSwitch"><span class="slider"></span></label></div><button class="btn danger full" id="logoutBtn" style="margin-top:18px"><svg class="icon sm"><use href="#i-arrow"/></svg>Đăng xuất thiết bị này</button></article></div></section>
+      </main>
+    </div>
   </div>
-</section>
-<div id="chatScreen" class="app hidden">
-  <aside id="sidebar" class="sidebar">
-    <div class="brand-row"><div class="brand-logo small">4T</div><div><strong>4 Anh Tày</strong><span id="groupCountLabel">0 nhóm</span></div><button id="closeMenuBtn">×</button></div>
-    <div class="side-title"><span>Nhóm chat</span><button id="quickAddGroupBtn">＋</button></div>
-    <ul id="groupList"></ul>
-    <button id="createGroupBtn" class="wide-btn">＋ Tạo nhóm mới</button>
-    <div class="online-box"><div class="side-title"><span>Đang online</span><b id="onlineCount">0</b></div><div id="onlineUsers"></div></div>
-    <button id="profileBtn" class="profile-card"><div id="myAvatar" class="avatar"></div><div><strong id="myNameLabel"></strong><span>Hồ sơ & cài đặt</span></div>⚙</button>
-  </aside>
-  <div id="mobileOverlay" class="overlay hidden"></div>
-  <main class="main">
-    <header class="header"><button id="menuBtn">☰</button><div id="currentGroupAvatar" class="avatar"></div><div class="header-copy"><strong id="currentGroupName">Chọn nhóm</strong><span id="groupStatus">Sẵn sàng trò chuyện</span><small id="typingIndicator"></small></div><button id="groupInfoBtn" class="circle-btn">⋯</button></header>
-    <div id="pinnedBar" class="pinned-bar hidden"></div>
-    <section id="messages" class="messages"><div class="empty-state">💬<h3>Chọn nhóm để bắt đầu</h3></div></section>
-    <div id="uploadProgress" class="upload-progress hidden"><span id="uploadLabel">Đang gửi file…</span><div><i id="uploadBar"></i></div></div>
-    <div id="attachPreview" class="attach-preview hidden"><div id="previewThumb"></div><div><strong id="attachName"></strong><span id="attachMeta"></span></div><button id="cancelAttach">×</button></div>
-    <form id="composer" class="composer"><button type="button" id="attachBtn">＋</button><input id="fileInput" type="file" accept="image/*,video/*" hidden><textarea id="textInput" rows="1" placeholder="Nhập tin nhắn…"></textarea><button id="sendBtn">➤</button></form>
-  </main>
-</div>
-<div id="createGroupModal" class="modal hidden"><div class="modal-card"><h2>Tạo nhóm</h2><input id="newGroupName" placeholder="Tên nhóm"><div id="createGroupError" class="error hidden"></div><div class="actions"><button id="cancelCreateGroup">Hủy</button><button id="confirmCreateGroup" class="primary">Tạo</button></div></div></div>
-<div id="mediaModal" class="media-modal hidden"><button id="closeMediaModal">×</button><div id="mediaModalContent"></div></div>
-<div id="drawer" class="drawer hidden"><div class="drawer-head"><h2 id="drawerTitle">Thông tin nhóm</h2><button id="closeDrawer">×</button></div><div id="drawerContent"></div></div>
-<template id="groupInfoTemplate"><div class="settings-list">
-<button data-view="media">🖼 Ảnh và video đã gửi</button><button data-view="members">👥 Thành viên & biệt danh</button><button data-view="pins">📌 Tin nhắn đã ghim</button><button data-view="events">🎮 Lịch chơi game / đi chơi</button><button data-view="memories">💫 Kho kỷ niệm</button><button data-action="mute">🔕 Tắt/bật thông báo nhóm</button><button data-action="rename">✏️ Đổi tên nhóm</button><button data-action="leave" class="danger">🚪 Rời nhóm</button><button data-action="delete" class="danger">🗑 Xóa nhóm</button></div></template>
-<script src="/socket.io/socket.io.js"></script><script src="client.js"></script>
-</body></html>
+
+  <nav class="mobile-bottom"><button class="mobile-nav-btn active" data-view="home"><svg class="icon"><use href="#i-home"/></svg><span>Trang chủ</span></button><button class="mobile-nav-btn" data-view="chat"><svg class="icon"><use href="#i-chat"/></svg><span>Chat</span></button><button class="mobile-nav-btn" data-view="events"><svg class="icon"><use href="#i-calendar"/></svg><span>Kèo</span></button><button class="mobile-nav-btn" data-view="memories"><svg class="icon"><use href="#i-image"/></svg><span>Kỷ niệm</span></button><button class="mobile-nav-btn" data-view="settings"><svg class="icon"><use href="#i-settings"/></svg><span>Cài đặt</span></button></nav>
+  <div class="search-overlay" id="searchOverlay"><div class="search-box"><div class="search-input-wrap"><svg class="icon"><use href="#i-search"/></svg><input id="globalSearch" placeholder="Tìm nhóm, thành viên, lịch hẹn…"><button class="icon-btn" id="closeSearch"><svg class="icon"><use href="#i-x"/></svg></button></div><div class="search-results" id="searchResults"><div class="search-empty">Nhập từ khóa để tìm trong dữ liệu đã tải.</div></div></div></div>
+
+  <div class="modal-backdrop" id="eventModal"><div class="modal"><div class="modal-head"><div><h2>Tạo kèo mới</h2><p>Lịch được lưu cho nhóm đang chọn.</p></div><button class="icon-btn modal-close"><svg class="icon"><use href="#i-x"/></svg></button></div><form id="eventForm"><div class="form-grid"><div class="field"><label for="newEventType">Loại kèo</label><select class="input" id="newEventType"><option value="game">Chơi game</option><option value="outing">Đi chơi / ăn uống</option><option value="other">Khác</option></select></div><div class="field"><label for="newEventTitle">Tên kèo</label><input class="input" id="newEventTitle" maxlength="80" required></div><div class="field"><label for="newEventDate">Ngày</label><input class="input" id="newEventDate" type="date" required></div><div class="field"><label for="newEventTime">Giờ</label><input class="input" id="newEventTime" type="time" required></div><div class="field full"><label for="newEventLocation">Địa điểm / phòng game</label><input class="input" id="newEventLocation" maxlength="120"></div><div class="field full"><label for="newEventNote">Ghi chú</label><textarea class="input" id="newEventNote" maxlength="500"></textarea></div></div><div class="modal-actions"><button type="button" class="btn ghost modal-close">Hủy</button><button type="submit" class="btn primary">Tạo kèo</button></div></form></div></div>
+
+  <div class="modal-backdrop" id="createGroupModal"><div class="modal"><div class="modal-head"><div><h2>Tạo nhóm mới</h2><p>Tạo phòng riêng cho một nhóm anh em hoặc mục đích cụ thể.</p></div><button class="icon-btn modal-close"><svg class="icon"><use href="#i-x"/></svg></button></div><form id="createGroupForm"><div class="field"><label for="newGroupName">Tên nhóm</label><input class="input" id="newGroupName" maxlength="40" placeholder="Ví dụ: Hội cuối tuần" required></div><div class="auth-error hidden" id="createGroupError"></div><div class="modal-actions"><button type="button" class="btn ghost modal-close">Hủy</button><button type="submit" class="btn primary">Tạo nhóm</button></div></form></div></div>
+
+  <div class="modal-backdrop group-modal-backdrop" id="groupModal"><div class="modal group-modal"><div class="modal-head"><div><h2 id="groupModalTitle">Thông tin nhóm</h2><p id="groupModalSubtitle">Quản lý thành viên, media và các thiết lập của nhóm.</p></div><button class="icon-btn modal-close"><svg class="icon"><use href="#i-x"/></svg></button></div><div class="group-tabs"><button class="active" data-group-tab="overview">Tổng quan</button><button data-group-tab="members">Thành viên</button><button data-group-tab="media">Media</button><button data-group-tab="pins">Đã ghim</button></div><div id="groupModalContent" class="group-modal-content"></div></div></div>
+
+  <div class="media-lightbox hidden" id="mediaLightbox"><button id="closeMediaLightbox"><svg class="icon"><use href="#i-x"/></svg></button><div id="mediaLightboxContent"></div></div>
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
