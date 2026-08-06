@@ -68,11 +68,17 @@
     <header class="chat-header">
       <button id="menuBtn" class="menu-btn" aria-label="Danh sách nhóm">☰</button>
       <div id="currentGroupAvatar" class="group-avatar header-avatar"></div>
-      <div>
+      <div class="chat-header-info">
         <h2 id="currentGroupName">—</h2>
         <span id="typingIndicator" class="typing-indicator"></span>
       </div>
+      <button id="groupSettingsBtn" class="icon-btn-mini header-settings-btn" title="Cài đặt nhóm" aria-label="Cài đặt nhóm">⚙</button>
     </header>
+
+    <div id="pinnedBar" class="pinned-bar hidden">
+      <span class="pinned-icon">📌</span>
+      <span id="pinnedText" class="pinned-text"></span>
+    </div>
 
     <div id="messages" class="messages" aria-live="polite"></div>
 
@@ -80,7 +86,7 @@
       <button type="button" id="attachBtn" class="icon-btn" title="Gửi ảnh / video" aria-label="Đính kèm file">📎</button>
       <input id="fileInput" type="file" accept="image/*,video/*" hidden />
       <input id="textInput" type="text" placeholder="Nhắn gì đó, dán link cũng được…" autocomplete="off" />
-      <button type="submit" class="send-btn" aria-label="Gửi">Gửi</button>
+      <button type="submit" id="sendBtn" class="send-btn" aria-label="Gửi">Gửi</button>
     </form>
 
     <div id="attachPreview" class="attach-preview hidden">
@@ -99,6 +105,60 @@
     <div class="modal-actions">
       <button type="button" id="cancelCreateGroup" class="modal-btn-secondary">Hủy</button>
       <button type="button" id="confirmCreateGroup" class="modal-btn-primary">Tạo nhóm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Panel cài đặt nhóm -->
+<div id="groupSettingsOverlay" class="modal-overlay hidden">
+  <div class="settings-panel">
+    <div class="settings-panel-head">
+      <h3>Cài đặt nhóm</h3>
+      <button id="closeGroupSettings" class="modal-close-btn" aria-label="Đóng">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row">
+        <span>Tắt thông báo nhóm này</span>
+        <label class="switch">
+          <input type="checkbox" id="muteToggle" />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span>Biệt danh của bạn trong nhóm</span>
+      </div>
+      <div class="nickname-row">
+        <input id="nicknameInput" type="text" placeholder="Để trống nếu dùng tên thật" maxlength="24" />
+        <button id="saveNicknameBtn" class="modal-btn-primary small">Lưu</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Thành viên (<span id="memberCount">0</span>)</div>
+      <ul id="memberList" class="member-list"></ul>
+      <div class="add-member-row">
+        <input id="addMemberInput" type="text" placeholder="Tên đăng nhập cần thêm" maxlength="24" />
+        <button id="addMemberBtn" class="modal-btn-primary small">Thêm</button>
+      </div>
+      <div id="memberError" class="auth-error hidden"></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Ảnh & video đã gửi</div>
+      <div id="mediaGrid" class="media-grid"></div>
+      <div id="mediaEmpty" class="media-empty">Chưa có ảnh/video nào.</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Tin nhắn đã ghim</div>
+      <ul id="pinnedList" class="pinned-list"></ul>
+      <div id="pinnedEmpty" class="media-empty">Chưa ghim tin nhắn nào.</div>
+    </div>
+
+    <div class="settings-section danger-zone">
+      <button id="leaveGroupBtn" class="modal-btn-secondary full">Rời nhóm</button>
+      <button id="deleteGroupBtn" class="modal-btn-danger full">Xóa nhóm</button>
     </div>
   </div>
 </div>
