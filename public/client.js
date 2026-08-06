@@ -16,10 +16,12 @@
   });
 
   Promise.all([
-    addStyle('smooth-chat.css?v=2'),
-    addStyle('mobile-chat-fix.css?v=2')
-  ]).then(() => addScript('client-core.js?v=2'))
-    .then(() => addScript('smooth-chat.js?v=2'))
-    .then(() => addScript('mobile-chat-fix.js?v=2'))
+    addStyle('smooth-chat.css?v=3'),
+    addStyle('mobile-scroll-fix.css?v=2'),
+    addStyle('mobile-feature-hub.css?v=1')
+  ]).then(() => addScript('client-core.js?v=3'))
+    .then(() => addScript('smooth-chat.js?v=3'))
+    .then(() => addScript('mobile-scroll-fix.js?v=2'))
+    .then(() => addScript('mobile-feature-hub.js?v=1'))
     .catch((error) => console.error('Không tải được ứng dụng:', error));
 })();
