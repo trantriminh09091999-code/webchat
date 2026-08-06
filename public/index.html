@@ -1,45 +1,31 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#111827">
-<title>4 Anh Tày — Chat nhóm</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+<!doctype html><html lang="vi" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080d16"><title>4 Anh Tày — Squad OS</title><link rel="stylesheet" href="style.css">
+</head><body>
 <div id="toast" class="toast hidden"></div>
-<section id="authScreen" class="auth-screen">
-  <div class="auth-card">
-    <div class="brand-logo">4T</div><h1>4 Anh Tày</h1><p>Chat, lưu kỷ niệm và lên kèo cùng anh em.</p>
-    <div class="auth-tabs"><button id="tabLogin" class="active">Đăng nhập</button><button id="tabRegister">Đăng ký</button></div>
-    <form id="loginForm" class="auth-form"><input id="loginUsername" placeholder="Tên đăng nhập"><input id="loginPassword" type="password" placeholder="Mật khẩu"><div id="loginError" class="error hidden"></div><button>Đăng nhập</button></form>
-    <form id="registerForm" class="auth-form hidden"><input id="registerUsername" placeholder="Tên đăng nhập"><input id="registerPassword" type="password" placeholder="Mật khẩu tối thiểu 6 ký tự"><div id="registerError" class="error hidden"></div><button>Tạo tài khoản</button></form>
-  </div>
+<section id="authScreen" class="auth">
+  <div class="auth-visual"><div class="brand"><b>4T</b><span>4 Anh Tày</span></div><div class="hero"><small>SQUAD OS</small><h1>Chat, lên kèo<br>và lưu mọi kỷ niệm.</h1><p>Một không gian riêng cho anh em: nhắn tin, voice, Liên Quân, lịch đi chơi và album chung.</p><div class="feature-row"><span>🎤 Voice</span><span>🎮 Liên Quân</span><span>📸 Kỷ niệm</span></div></div></div>
+  <div class="auth-panel"><div class="auth-card"><div class="mobile-logo">4T</div><h2>Chào mừng trở lại</h2><p>Đăng nhập để vào phòng riêng của hội.</p>
+    <div class="tabs"><button id="tabLogin" class="active">Đăng nhập</button><button id="tabRegister">Đăng ký</button></div>
+    <form id="loginForm"><label>Tên đăng nhập<input id="loginUsername" autocomplete="username" placeholder="Tên của bạn"></label><label>Mật khẩu<input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••"></label><div id="loginError" class="error hidden"></div><button class="primary">Đăng nhập</button></form>
+    <form id="registerForm" class="hidden"><label>Tên đăng nhập<input id="registerUsername" placeholder="Từ 2 đến 24 ký tự"></label><label>Mật khẩu<input id="registerPassword" type="password" placeholder="Tối thiểu 6 ký tự"></label><div id="registerError" class="error hidden"></div><button class="primary">Tạo tài khoản</button></form>
+  </div></div>
 </section>
-<div id="chatScreen" class="app hidden">
-  <aside id="sidebar" class="sidebar">
-    <div class="brand-row"><div class="brand-logo small">4T</div><div><strong>4 Anh Tày</strong><span id="groupCountLabel">0 nhóm</span></div><button id="closeMenuBtn">×</button></div>
-    <div class="side-title"><span>Nhóm chat</span><button id="quickAddGroupBtn">＋</button></div>
-    <ul id="groupList"></ul>
-    <button id="createGroupBtn" class="wide-btn">＋ Tạo nhóm mới</button>
-    <div class="online-box"><div class="side-title"><span>Đang online</span><b id="onlineCount">0</b></div><div id="onlineUsers"></div></div>
-    <button id="profileBtn" class="profile-card"><div id="myAvatar" class="avatar"></div><div><strong id="myNameLabel"></strong><span>Hồ sơ & cài đặt</span></div>⚙</button>
-  </aside>
-  <div id="mobileOverlay" class="overlay hidden"></div>
-  <main class="main">
-    <header class="header"><button id="menuBtn">☰</button><div id="currentGroupAvatar" class="avatar"></div><div class="header-copy"><strong id="currentGroupName">Chọn nhóm</strong><span id="groupStatus">Sẵn sàng trò chuyện</span><small id="typingIndicator"></small></div><button id="groupInfoBtn" class="circle-btn">⋯</button></header>
-    <div id="pinnedBar" class="pinned-bar hidden"></div>
-    <section id="messages" class="messages"><div class="empty-state">💬<h3>Chọn nhóm để bắt đầu</h3></div></section>
-    <div id="uploadProgress" class="upload-progress hidden"><span id="uploadLabel">Đang gửi file…</span><div><i id="uploadBar"></i></div></div>
-    <div id="attachPreview" class="attach-preview hidden"><div id="previewThumb"></div><div><strong id="attachName"></strong><span id="attachMeta"></span></div><button id="cancelAttach">×</button></div>
-    <form id="composer" class="composer"><button type="button" id="attachBtn">＋</button><input id="fileInput" type="file" accept="image/*,video/*" hidden><textarea id="textInput" rows="1" placeholder="Nhập tin nhắn…"></textarea><button id="sendBtn">➤</button></form>
+<div id="app" class="app hidden">
+  <aside id="sidebar"><div class="side-brand"><b>4T</b><div><strong>4 Anh Tày</strong><span id="groupCount">0 nhóm</span></div><button id="closeMenu">×</button></div>
+    <div class="side-head"><span>Nhóm chat</span><button id="newGroup">＋</button></div><div id="groups"></div>
+    <div class="online"><div class="side-head"><span>Đang online</span><b id="onlineCount">0</b></div><div id="onlineUsers"></div></div>
+    <button id="profileBtn" class="profile"><div id="myAvatar" class="avatar"></div><div><strong id="myName"></strong><span>Hồ sơ & cài đặt</span></div><i>⚙</i></button>
+  </aside><div id="overlay" class="overlay hidden"></div>
+  <main><header><button id="menuBtn">☰</button><div id="groupAvatar" class="avatar"></div><div class="head-copy"><strong id="groupName">Chọn nhóm</strong><span id="groupStatus">Sẵn sàng</span><small id="typing"></small></div><button id="gameBtn" title="Liên Quân Hub">🎮</button><button id="infoBtn">⋯</button></header>
+    <div id="pinned" class="pinned hidden"></div><section id="messages"><div class="empty">💬<h3>Chọn nhóm để bắt đầu</h3></div></section>
+    <div id="recording" class="recording hidden"><span class="pulse"></span><strong>Đang ghi âm</strong><time id="recordTime">00:00</time><button id="cancelRecord">Hủy</button></div>
+    <div id="upload" class="upload hidden"><span id="uploadText">Đang gửi…</span><div><i id="uploadBar"></i></div></div>
+    <div id="preview" class="preview hidden"><div id="previewMedia"></div><div><strong id="previewName"></strong><span id="previewMeta"></span></div><button id="clearPreview">×</button></div>
+    <form id="composer"><button type="button" id="attachBtn">＋</button><input id="fileInput" type="file" accept="image/*,video/*" hidden><textarea id="textInput" rows="1" placeholder="Nhắn cho cả hội…"></textarea><button type="button" id="voiceBtn" title="Ghi âm">🎤</button><button id="sendBtn">➤</button></form>
   </main>
 </div>
-<div id="createGroupModal" class="modal hidden"><div class="modal-card"><h2>Tạo nhóm</h2><input id="newGroupName" placeholder="Tên nhóm"><div id="createGroupError" class="error hidden"></div><div class="actions"><button id="cancelCreateGroup">Hủy</button><button id="confirmCreateGroup" class="primary">Tạo</button></div></div></div>
-<div id="mediaModal" class="media-modal hidden"><button id="closeMediaModal">×</button><div id="mediaModalContent"></div></div>
-<div id="drawer" class="drawer hidden"><div class="drawer-head"><h2 id="drawerTitle">Thông tin nhóm</h2><button id="closeDrawer">×</button></div><div id="drawerContent"></div></div>
-<template id="groupInfoTemplate"><div class="settings-list">
-<button data-view="media">🖼 Ảnh và video đã gửi</button><button data-view="members">👥 Thành viên & biệt danh</button><button data-view="pins">📌 Tin nhắn đã ghim</button><button data-view="events">🎮 Lịch chơi game / đi chơi</button><button data-view="memories">💫 Kho kỷ niệm</button><button data-action="mute">🔕 Tắt/bật thông báo nhóm</button><button data-action="rename">✏️ Đổi tên nhóm</button><button data-action="leave" class="danger">🚪 Rời nhóm</button><button data-action="delete" class="danger">🗑 Xóa nhóm</button></div></template>
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle"></h2><button id="modalClose">×</button></div><div id="modalBody"></div></div></div>
+<div id="viewer" class="viewer hidden"><button id="viewerClose">×</button><div id="viewerBody"></div></div>
 <script src="/socket.io/socket.io.js"></script><script src="client.js"></script>
 </body></html>
