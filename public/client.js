@@ -28,8 +28,12 @@ const createGroupError = document.getElementById('createGroupError');
 const cancelCreateGroup = document.getElementById('cancelCreateGroup');
 const confirmCreateGroup = document.getElementById('confirmCreateGroup');
 
-const currentGroupName = document.getElementById('currentGroupName');
+const currentGroupNameEl = document.getElementById('currentGroupName');
 const currentGroupAvatar = document.getElementById('currentGroupAvatar');
+const groupSettingsBtn = document.getElementById('groupSettingsBtn');
+
+const pinnedBar = document.getElementById('pinnedBar');
+const pinnedText = document.getElementById('pinnedText');
 
 const messagesEl = document.getElementById('messages');
 const composer = document.getElementById('composer');
@@ -42,13 +46,35 @@ const cancelAttach = document.getElementById('cancelAttach');
 const typingIndicator = document.getElementById('typingIndicator');
 const menuBtn = document.getElementById('menuBtn');
 const sidebar = document.querySelector('.sidebar');
+const sendBtn = document.getElementById('sendBtn');
+
+// Settings panel elements
+const groupSettingsOverlay = document.getElementById('groupSettingsOverlay');
+const closeGroupSettings = document.getElementById('closeGroupSettings');
+const muteToggle = document.getElementById('muteToggle');
+const nicknameInput = document.getElementById('nicknameInput');
+const saveNicknameBtn = document.getElementById('saveNicknameBtn');
+const memberList = document.getElementById('memberList');
+const memberCount = document.getElementById('memberCount');
+const addMemberInput = document.getElementById('addMemberInput');
+const addMemberBtn = document.getElementById('addMemberBtn');
+const memberError = document.getElementById('memberError');
+const mediaGrid = document.getElementById('mediaGrid');
+const mediaEmpty = document.getElementById('mediaEmpty');
+const pinnedList = document.getElementById('pinnedList');
+const pinnedEmpty = document.getElementById('pinnedEmpty');
+const leaveGroupBtn = document.getElementById('leaveGroupBtn');
+const deleteGroupBtn = document.getElementById('deleteGroupBtn');
 
 let myName = '';
 let myToken = '';
 let pendingAttachment = null;
+let isSending = false;
 let typingTimeout = null;
 let groups = [];
 let activeGroupId = null;
+let activeGroupData = null;
+let pinnedMessages = [];
 
 // ---- Auth tabs ----
 tabLogin.addEventListener('click', () => {
@@ -111,7 +137,6 @@ logoutBtn.addEventListener('click', () => {
   location.reload();
 });
 
-// ---- Enter chat ----
 async function enterChat(name, token) {
   myName = name;
   myToken = token;
@@ -141,7 +166,18 @@ menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 // ---- Groups ----
 function groupInitials(name) {
   const words = name.trim().split(/\s+/).slice(0, 2);
-  return words.map(w => w[0]).join('').toUpperCase();
+  return words.map((w) => w[0]).join('').toUpperCase();
+}
+
+function isMuted(groupId) {
+  const muted = JSON.parse(localStorage.getItem('t4_muted') || '[]');
+  return muted.includes(groupId);
+}
+function setMuted(groupId, muted) {
+  let list = JSON.parse(localStorage.getItem('t4_muted') || '[]');
+  if (muted && !list.includes(groupId)) list.push(groupId);
+  if (!muted) list = list.filter((id) => id !== groupId);
+  localStorage.setItem('t4_muted', JSON.stringify(list));
 }
 
 async function loadGroups() {
@@ -149,12 +185,8 @@ async function loadGroups() {
     const res = await fetch('/api/groups', { headers: { Authorization: 'Bearer ' + myToken } });
     groups = await res.json();
     renderGroupList();
-    if (groups.length && !activeGroupId) {
-      selectGroup(groups[0]._id);
-    }
-  } catch (err) {
-    console.error('Không tải được danh sách nhóm', err);
-  }
+    if (groups.length && !activeGroupId) selectGroup(groups[0]._id);
+  } catch (err) { console.error('Không tải được danh sách nhóm', err); }
 }
 
 function renderGroupList() {
@@ -172,12 +204,15 @@ function renderGroupList() {
 function selectGroup(groupId) {
   activeGroupId = groupId;
   const g = groups.find((x) => x._id === groupId);
+  activeGroupData = g || null;
   if (g) {
-    currentGroupName.textContent = g.name;
+    currentGroupNameEl.textContent = g.name;
     currentGroupAvatar.textContent = groupInitials(g.name);
   }
   renderGroupList();
   messagesEl.innerHTML = '';
+  pinnedMessages = [];
+  updatePinnedBar();
   socket.emit('joinGroup', groupId);
   sidebar.classList.remove('open');
 }
@@ -186,6 +221,8 @@ socket.on('groupHistory', ({ groupId, messages }) => {
   if (groupId !== activeGroupId) return;
   messagesEl.innerHTML = '';
   messages.forEach(renderMessage);
+  pinnedMessages = messages.filter((m) => m.pinned);
+  updatePinnedBar();
   scrollToBottom();
 });
 
@@ -194,6 +231,54 @@ socket.on('message', (msg) => {
   renderMessage(msg);
   scrollToBottom();
 });
+
+socket.on('groupCreated', (group) => {
+  if (!groups.find((g) => g._id === group._id)) {
+    groups.push(group);
+    renderGroupList();
+  }
+});
+
+socket.on('groupUpdated', (group) => {
+  const idx = groups.findIndex((g) => g._id === group._id);
+  if (idx >= 0) groups[idx] = group;
+  if (activeGroupId === group._id) activeGroupData = group;
+  renderGroupList();
+});
+
+socket.on('groupDeleted', (groupId) => {
+  groups = groups.filter((g) => g._id !== groupId);
+  if (activeGroupId === groupId) {
+    activeGroupId = null;
+    activeGroupData = null;
+    messagesEl.innerHTML = '';
+    currentGroupNameEl.textContent = '—';
+    currentGroupAvatar.textContent = '';
+    groupSettingsOverlay.classList.add('hidden');
+    if (groups.length) selectGroup(groups[0]._id);
+  }
+  renderGroupList();
+});
+
+socket.on('pinnedUpdate', ({ groupId, pinned }) => {
+  if (groupId !== activeGroupId) return;
+  pinnedMessages = pinned;
+  updatePinnedBar();
+  document.querySelectorAll('.pin-btn').forEach((btn) => {
+    const id = btn.dataset.msgId;
+    btn.classList.toggle('pinned', pinned.some((p) => p._id === id));
+  });
+});
+
+function updatePinnedBar() {
+  if (pinnedMessages.length === 0) {
+    pinnedBar.classList.add('hidden');
+    return;
+  }
+  pinnedBar.classList.remove('hidden');
+  const latest = pinnedMessages[0];
+  pinnedText.textContent = `${latest.name}: ${latest.text || '[tệp đính kèm]'}`;
+}
 
 let typingClearTimer = null;
 socket.on('typing', ({ name, isTyping }) => {
@@ -211,9 +296,7 @@ function openCreateGroupModal() {
   createGroupModal.classList.remove('hidden');
   newGroupName.focus();
 }
-function closeCreateGroupModal() {
-  createGroupModal.classList.add('hidden');
-}
+function closeCreateGroupModal() { createGroupModal.classList.add('hidden'); }
 createGroupBtn.addEventListener('click', openCreateGroupModal);
 quickAddGroupBtn.addEventListener('click', openCreateGroupModal);
 cancelCreateGroup.addEventListener('click', closeCreateGroupModal);
@@ -232,12 +315,144 @@ confirmCreateGroup.addEventListener('click', async () => {
     closeCreateGroupModal();
     await loadGroups();
     selectGroup(data._id);
-  } catch (err) {
-    showAuthError(createGroupError, 'Lỗi kết nối máy chủ.');
-  }
+  } catch (err) { showAuthError(createGroupError, 'Lỗi kết nối máy chủ.'); }
 });
 
-// ---- Rendering ----
+// ---- Panel cài đặt nhóm ----
+groupSettingsBtn.addEventListener('click', openGroupSettings);
+closeGroupSettings.addEventListener('click', () => groupSettingsOverlay.classList.add('hidden'));
+
+async function openGroupSettings() {
+  if (!activeGroupId) return;
+  hideAuthError(memberError);
+  muteToggle.checked = isMuted(activeGroupId);
+  const myNick = (activeGroupData?.nicknames || {})[myName] || '';
+  nicknameInput.value = myNick;
+  renderMemberList();
+  await loadMedia();
+  renderPinnedList();
+  groupSettingsOverlay.classList.remove('hidden');
+}
+
+muteToggle.addEventListener('change', () => {
+  setMuted(activeGroupId, muteToggle.checked);
+});
+
+saveNicknameBtn.addEventListener('click', async () => {
+  try {
+    const res = await fetch(`/api/groups/${activeGroupId}/nickname`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + myToken },
+      body: JSON.stringify({ nickname: nicknameInput.value.trim() })
+    });
+    const data = await res.json();
+    if (res.ok) activeGroupData = data;
+  } catch (err) { /* im lặng */ }
+});
+
+function renderMemberList() {
+  const members = activeGroupData?.members || [];
+  memberCount.textContent = members.length;
+  memberList.innerHTML = '';
+  members.forEach((m) => {
+    const li = document.createElement('li');
+    li.className = 'member-item';
+    const isOwner = activeGroupData.createdBy === m;
+    const nick = (activeGroupData.nicknames || {})[m];
+    li.innerHTML = `
+      <div class="member-avatar">${escapeHtml(m[0]?.toUpperCase() || '?')}</div>
+      <div class="member-name">${escapeHtml(nick ? `${nick} (${m})` : m)}</div>
+      ${isOwner ? '<span class="member-owner-tag">Chủ nhóm</span>' : ''}
+      ${(!isOwner && (activeGroupData.createdBy === myName || m === myName)) ? '<button class="member-remove-btn" title="Xóa khỏi nhóm">✕</button>' : ''}
+    `;
+    const removeBtn = li.querySelector('.member-remove-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', async () => {
+        try {
+          const res = await fetch(`/api/groups/${activeGroupId}/members/${encodeURIComponent(m)}`, {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + myToken }
+          });
+          const data = await res.json();
+          if (res.ok) { activeGroupData = data; renderMemberList(); }
+        } catch (err) { /* im lặng */ }
+      });
+    }
+    memberList.appendChild(li);
+  });
+}
+
+addMemberBtn.addEventListener('click', async () => {
+  hideAuthError(memberError);
+  const username = addMemberInput.value.trim();
+  if (!username) return;
+  try {
+    const res = await fetch(`/api/groups/${activeGroupId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + myToken },
+      body: JSON.stringify({ username })
+    });
+    const data = await res.json();
+    if (!res.ok) return showAuthError(memberError, data.error || 'Thêm thất bại.');
+    activeGroupData = data;
+    addMemberInput.value = '';
+    renderMemberList();
+  } catch (err) { showAuthError(memberError, 'Lỗi kết nối máy chủ.'); }
+});
+
+async function loadMedia() {
+  mediaGrid.innerHTML = '';
+  try {
+    const res = await fetch(`/api/groups/${activeGroupId}/media`, { headers: { Authorization: 'Bearer ' + myToken } });
+    const media = await res.json();
+    mediaEmpty.classList.toggle('hidden', media.length > 0);
+    media.forEach((m) => {
+      const el = document.createElement(m.attachment.type === 'video' ? 'video' : 'img');
+      el.src = m.attachment.url;
+      if (m.attachment.type === 'video') el.muted = true;
+      mediaGrid.appendChild(el);
+    });
+  } catch (err) { mediaEmpty.classList.remove('hidden'); }
+}
+
+function renderPinnedList() {
+  pinnedList.innerHTML = '';
+  pinnedEmpty.classList.toggle('hidden', pinnedMessages.length > 0);
+  pinnedMessages.forEach((m) => {
+    const li = document.createElement('li');
+    li.className = 'pinned-item';
+    const time = new Date(m.time);
+    const hh = String(time.getHours()).padStart(2, '0');
+    const mm = String(time.getMinutes()).padStart(2, '0');
+    li.innerHTML = `<div class="pinned-item-meta">${escapeHtml(m.name)} · ${hh}:${mm}</div>${escapeHtml(m.text || '[tệp đính kèm]')}`;
+    pinnedList.appendChild(li);
+  });
+}
+
+leaveGroupBtn.addEventListener('click', async () => {
+  if (!confirm('Bạn chắc chắn muốn rời nhóm này?')) return;
+  try {
+    await fetch(`/api/groups/${activeGroupId}/leave`, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + myToken }
+    });
+    groupSettingsOverlay.classList.add('hidden');
+    await loadGroups();
+  } catch (err) { alert('Lỗi kết nối máy chủ.'); }
+});
+
+deleteGroupBtn.addEventListener('click', async () => {
+  if (!confirm('Xóa nhóm sẽ mất toàn bộ tin nhắn. Bạn chắc chắn?')) return;
+  try {
+    const res = await fetch(`/api/groups/${activeGroupId}`, {
+      method: 'DELETE', headers: { Authorization: 'Bearer ' + myToken }
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || 'Xóa nhóm thất bại.');
+    groupSettingsOverlay.classList.add('hidden');
+  } catch (err) { alert('Lỗi kết nối máy chủ.'); }
+});
+
+// ---- Rendering tin nhắn ----
 function renderMessage(msg) {
   const wrap = document.createElement('div');
   wrap.className = 'msg' + (msg.name === myName ? ' own' : '');
@@ -247,7 +462,13 @@ function renderMessage(msg) {
   const time = new Date(msg.time);
   const hh = String(time.getHours()).padStart(2, '0');
   const mm = String(time.getMinutes()).padStart(2, '0');
-  meta.innerHTML = `<span class="msg-name">${escapeHtml(msg.name)}</span><span>${hh}:${mm}</span>`;
+  const pinnedNow = pinnedMessages.some((p) => p._id === msg._id);
+  meta.innerHTML = `<span class="msg-name">${escapeHtml(msg.name)}</span><span>${hh}:${mm}</span><button class="pin-btn${pinnedNow ? ' pinned' : ''}" data-msg-id="${msg._id}" title="Ghim tin nhắn">📌</button>`;
+
+  const pinBtn = meta.querySelector('.pin-btn');
+  pinBtn.addEventListener('click', () => {
+    socket.emit('pinMessage', { groupId: activeGroupId, messageId: msg._id });
+  });
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -290,21 +511,36 @@ function linkify(text) {
 
 function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
-// ---- Sending ----
+// ---- Gửi tin nhắn (đã sửa: khóa nút khi đang gửi, chỉ cần bấm 1 lần) ----
 composer.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (isSending) return;
+
   const text = textInput.value.trim();
   if ((!text && !pendingAttachment) || !activeGroupId) return;
 
-  let attachment = null;
-  if (pendingAttachment) {
-    attachment = await uploadFile(pendingAttachment.file);
-    if (!attachment) return;
-  }
+  isSending = true;
+  sendBtn.disabled = true;
+  attachBtn.disabled = true;
+  const originalLabel = sendBtn.textContent;
+  sendBtn.textContent = 'Đang gửi...';
 
-  socket.emit('chatMessage', { text, attachment });
-  textInput.value = '';
-  clearAttachment();
+  try {
+    let attachment = null;
+    if (pendingAttachment) {
+      attachment = await uploadFile(pendingAttachment.file);
+      if (!attachment) return;
+    }
+    socket.emit('chatMessage', { text, attachment });
+    textInput.value = '';
+    clearAttachment();
+  } finally {
+    isSending = false;
+    sendBtn.disabled = false;
+    attachBtn.disabled = false;
+    sendBtn.textContent = originalLabel;
+    textInput.focus();
+  }
 });
 
 async function uploadFile(file) {
@@ -312,8 +548,12 @@ async function uploadFile(file) {
   formData.append('file', file);
   try {
     const res = await fetch('/upload', { method: 'POST', body: formData });
-    if (!res.ok) throw new Error('upload failed');
-    return await res.json();
+    const data = await res.json();
+    if (!res.ok) {
+      alert('Gửi file thất bại: ' + (data.error || 'lỗi không xác định'));
+      return null;
+    }
+    return data;
   } catch (err) {
     alert('Gửi file thất bại: ' + err.message);
     return null;
