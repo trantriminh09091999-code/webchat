@@ -14,6 +14,12 @@
     script.onerror = reject;
     document.body.appendChild(script);
   });
-  addStyle('smooth-chat.css?v=1');
-  addScript('client-core.js?v=1').then(() => addScript('smooth-chat.js?v=1')).catch((error) => console.error('Không tải được ứng dụng:', error));
+
+  Promise.all([
+    addStyle('smooth-chat.css?v=2'),
+    addStyle('mobile-chat-fix.css?v=2')
+  ]).then(() => addScript('client-core.js?v=2'))
+    .then(() => addScript('smooth-chat.js?v=2'))
+    .then(() => addScript('mobile-chat-fix.js?v=2'))
+    .catch((error) => console.error('Không tải được ứng dụng:', error));
 })();
