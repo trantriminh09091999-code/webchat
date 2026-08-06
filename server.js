@@ -9,6 +9,14 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const { Server } = require('socket.io');
 
+// ---- Chống crash toàn server ----
+process.on('uncaughtException', (err) => {
+  console.error('LỖI KHÔNG BẮT ĐƯỢC (đã chặn crash):', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('PROMISE LỖI KHÔNG BẮT ĐƯỢC (đã chặn crash):', err);
+});
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -46,19 +54,31 @@ const messageSchema = new mongoose.Schema({
 const Message = mongoose.model('Message', messageSchema);
 
 mongoose.connection.once('open', async () => {
-  const count = await Group.countDocuments();
-  if (count === 0) {
-    await Group.create({ name: 'Nhóm chung', createdBy: 'system' });
-    console.log('Đã tạo nhóm mặc định: Nhóm chung');
+  try {
+    const count = await Group.countDocuments();
+    if (count === 0) {
+      await Group.create({ name: 'Nhóm chung', createdBy: 'system' });
+      console.log('Đã tạo nhóm mặc định: Nhóm chung');
+    }
+  } catch (err) {
+    console.error('Lỗi tạo nhóm mặc định:', err.message);
   }
 });
 
 // ---- Cloudinary ----
+const hasCloudinaryConfig =
+  process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET;
+
+if (!hasCloudinaryConfig) {
+  console.error('THIẾU biến môi trường Cloudinary! Kiểm tra lại CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET trên Render.');
+}
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -69,10 +89,18 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
 
-app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Không có file' });
-  const isVideo = req.file.mimetype.startsWith('video');
-  res.json({ url: req.file.path, type: isVideo ? 'video' : 'image' });
+app.post('/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Lỗi upload file:', err.message);
+      return res.status(400).json({ error: 'Gửi file thất bại: ' + err.message });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'Không có file' });
+    }
+    const isVideo = req.file.mimetype.startsWith('video');
+    res.json({ url: req.file.path, type: isVideo ? 'video' : 'image' });
+  });
 });
 
 // ---- Auth helpers ----
@@ -108,6 +136,7 @@ app.post('/api/register', async (req, res) => {
     await User.create({ username, passwordHash, token });
     res.json({ token, username });
   } catch (err) {
+    console.error('Lỗi đăng ký:', err.message);
     res.status(500).json({ error: 'Lỗi máy chủ' });
   }
 });
@@ -125,6 +154,7 @@ app.post('/api/login', async (req, res) => {
     await user.save();
     res.json({ token, username: user.username });
   } catch (err) {
+    console.error('Lỗi đăng nhập:', err.message);
     res.status(500).json({ error: 'Lỗi máy chủ' });
   }
 });
@@ -143,15 +173,36 @@ app.get('/api/me', async (req, res) => {
 
 // ---- Groups API ----
 app.get('/api/groups', requireAuth, async (req, res) => {
-  const groups = await Group.find().sort({ createdAt: 1 }).lean();
-  res.json(groups);
+  try {
+    const groups = await Group.find().sort({ createdAt: 1 }).lean();
+    res.json(groups);
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi máy chủ' });
+  }
 });
 
 app.post('/api/groups', requireAuth, async (req, res) => {
-  const name = (req.body.name || '').toString().trim().slice(0, 40);
-  if (!name) return res.status(400).json({ error: 'Tên nhóm không được để trống' });
-  const group = await Group.create({ name, createdBy: req.user.username });
-  res.json(group);
+  try {
+    const name = (req.body.name || '').toString().trim().slice(0, 40);
+    if (!name) return res.status(400).json({ error: 'Tên nhóm không được để trống' });
+    const group = await Group.create({ name, createdBy: req.user.username });
+    res.json(group);
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi máy chủ' });
+  }
+});
+
+app.delete('/api/groups/:id', requireAuth, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ error: 'Không tìm thấy nhóm' });
+    await Message.deleteMany({ groupId: group._id });
+    await group.deleteOne();
+    io.emit('groupDeleted', String(group._id));
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi máy chủ' });
+  }
 });
 
 // ---- Realtime ----
@@ -181,23 +232,27 @@ io.on('connection', (socket) => {
       const history = await Message.find({ groupId }).sort({ time: 1 }).limit(200).lean();
       socket.emit('groupHistory', { groupId, messages: history });
     } catch (err) {
-      // groupId không hợp lệ, bỏ qua
+      console.error('Lỗi joinGroup:', err.message);
     }
   });
 
   socket.on('chatMessage', async (msg) => {
-    const name = socket.data.name;
-    const groupId = socket.data.currentGroup;
-    if (!name || !groupId) return;
-    const entry = {
-      groupId,
-      name,
-      text: (msg.text || '').toString().slice(0, 2000),
-      attachment: msg.attachment || null,
-      time: new Date()
-    };
-    const saved = await Message.create(entry);
-    io.to(`group:${groupId}`).emit('message', saved.toObject());
+    try {
+      const name = socket.data.name;
+      const groupId = socket.data.currentGroup;
+      if (!name || !groupId) return;
+      const entry = {
+        groupId,
+        name,
+        text: (msg.text || '').toString().slice(0, 2000),
+        attachment: msg.attachment || null,
+        time: new Date()
+      };
+      const saved = await Message.create(entry);
+      io.to(`group:${groupId}`).emit('message', saved.toObject());
+    } catch (err) {
+      console.error('Lỗi gửi tin nhắn:', err.message);
+    }
   });
 
   socket.on('typing', (isTyping) => {
@@ -207,6 +262,12 @@ io.on('connection', (socket) => {
       socket.to(`group:${groupId}`).emit('typing', { name, isTyping });
     }
   });
+});
+
+// ---- Error handler cuối cùng (chặn mọi lỗi lọt lưới) ----
+app.use((err, req, res, next) => {
+  console.error('Lỗi Express không xác định:', err);
+  res.status(500).json({ error: 'Đã có lỗi xảy ra, vui lòng thử lại.' });
 });
 
 server.listen(PORT, () => console.log(`Chat server running on port ${PORT}`));
