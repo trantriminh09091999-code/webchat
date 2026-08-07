@@ -54,6 +54,7 @@ const sendBtn = document.getElementById('sendBtn');
 const replyPreview = document.getElementById('replyPreview');
 const replyPreviewText = document.getElementById('replyPreviewText');
 const cancelReply = document.getElementById('cancelReply');
+const composerEmojiBtn = document.getElementById('composerEmojiBtn');
 
 const gifModal = document.getElementById('gifModal');
 const gifSearchInput = document.getElementById('gifSearchInput');
@@ -91,6 +92,7 @@ let pinnedMessages = [];
 let gifSearchTimer = null;
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+const COMPOSER_EMOJIS = ['😀','😂','😍','😊','😉','😎','🤔','😢','😭','😡','😱','🥳','👍','👎','❤️','🔥','🎉','🙏','👏','💯','😴','🤗','😅','🤣'];
 
 // ---- Auth tabs ----
 tabLogin.addEventListener('click', () => {
@@ -827,10 +829,27 @@ function renderGifResults(items) {
   });
 }
 
-gifSearchInput.addEventListener('input', () => {
-  clearTimeout(gifSearchTimer);
-  const q = gifSearchInput.value.trim();
-  gifSearchTimer = setTimeout(() => {
-    if (q) searchGifs(q); else loadTrendingGifs();
-  }, 400);
+composerEmojiBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const existing = document.querySelector('.composer-emoji-picker');
+  if (existing) { existing.remove(); return; }
+  const picker = document.createElement('div');
+  picker.className = 'composer-emoji-picker';
+  COMPOSER_EMOJIS.forEach((emoji) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = emoji;
+    b.addEventListener('click', () => {
+      textInput.value += emoji;
+      textInput.focus();
+    });
+    picker.appendChild(b);
+  });
+  composerEmojiBtn.parentElement.appendChild(picker);
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.composer-emoji-wrap')) {
+    document.querySelectorAll('.composer-emoji-picker').forEach((el) => el.remove());
+  }
 });
