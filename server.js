@@ -46,6 +46,13 @@ const messageSchema = new mongoose.Schema({
   text: String,
   attachment: { url: String, type: String },
   pinned: { type: Boolean, default: false },
+  recalled: { type: Boolean, default: false },
+  replyTo: {
+    messageId: String,
+    name: String,
+    text: String
+  },
+  reactions: { type: Object, default: {} },
   time: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', messageSchema);
@@ -308,6 +315,7 @@ io.on('connection', (socket) => {
         groupId, name,
         text: (msg.text || '').toString().slice(0, 2000),
         attachment: msg.attachment || null,
+        replyTo: msg.replyTo || null,
         time: new Date()
       };
       const saved = await Message.create(entry);
@@ -315,6 +323,40 @@ io.on('connection', (socket) => {
     } catch (err) { console.error('Lỗi gửi tin nhắn:', err.message); }
   });
 
+  socket.on('recallMessage', async ({ groupId, messageId }) => {
+    try {
+      const msg = await Message.findById(messageId);
+      if (!msg || String(msg.groupId) !== String(groupId)) return;
+      if (msg.name !== socket.data.name) return;
+      msg.recalled = true;
+      msg.text = '';
+      msg.attachment = null;
+      await msg.save();
+      io.to(`group:${groupId}`).emit('messageUpdated', msg.toObject());
+    } catch (err) { console.error('Lỗi thu hồi tin nhắn:', err.message); }
+  });
+
+  socket.on('reactMessage', async ({ groupId, messageId, emoji }) => {
+    try {
+      const msg = await Message.findById(messageId);
+      if (!msg || String(msg.groupId) !== String(groupId)) return;
+      const name = socket.data.name;
+      if (!name) return;
+      const reactions = { ...(msg.reactions || {}) };
+      const alreadyOnThis = (reactions[emoji] || []).includes(name);
+      for (const key of Object.keys(reactions)) {
+        reactions[key] = reactions[key].filter((u) => u !== name);
+        if (reactions[key].length === 0) delete reactions[key];
+      }
+      if (!alreadyOnThis) {
+        reactions[emoji] = [...(reactions[emoji] || []), name];
+      }
+      msg.reactions = reactions;
+      msg.markModified('reactions');
+      await msg.save();
+      io.to(`group:${groupId}`).emit('messageUpdated', msg.toObject());
+    } catch (err) { console.error('Lỗi thả cảm xúc:', err.message); }
+  });
   socket.on('pinMessage', async ({ groupId, messageId }) => {
     try {
       const msg = await Message.findById(messageId);
