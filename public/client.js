@@ -294,10 +294,6 @@ socket.on('pinnedUpdate', ({ groupId, pinned }) => {
   if (groupId !== activeGroupId) return;
   pinnedMessages = pinned;
   updatePinnedBar();
-  document.querySelectorAll('.pin-action').forEach((btn) => {
-    const id = btn.dataset.msgId;
-    btn.classList.toggle('pinned-active', pinned.some((p) => p._id === id));
-  });
 });
 
 function updatePinnedBar() {
@@ -557,7 +553,6 @@ function buildMessageEl(msg) {
     }
   }
 
-  // Reactions
   if (!msg.recalled && msg.reactions && Object.keys(msg.reactions).length > 0) {
     const reactRow = document.createElement('div');
     reactRow.className = 'reactions-row';
@@ -574,7 +569,6 @@ function buildMessageEl(msg) {
     bubble.appendChild(reactRow);
   }
 
-  // Actions: reply, emoji, 3-dot menu
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
 
@@ -829,6 +823,15 @@ function renderGifResults(items) {
   });
 }
 
+gifSearchInput.addEventListener('input', () => {
+  clearTimeout(gifSearchTimer);
+  const q = gifSearchInput.value.trim();
+  gifSearchTimer = setTimeout(() => {
+    if (q) searchGifs(q); else loadTrendingGifs();
+  }, 400);
+});
+
+// ---- Emoji trong ô nhắn tin ----
 composerEmojiBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const existing = document.querySelector('.composer-emoji-picker');
