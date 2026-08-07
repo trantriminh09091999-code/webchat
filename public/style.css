@@ -305,7 +305,18 @@ html, body {
 }
 .icon-btn:hover { filter: brightness(0.97); }
 .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-#gifBtn { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+.composer-emoji-wrap { position: relative; }
+.composer-emoji-picker {
+  position: absolute; bottom: 48px; left: 0; background: var(--white);
+  border: 1px solid var(--blue-line); border-radius: 14px; box-shadow: 0 10px 24px rgba(10,74,99,0.15);
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 8px; z-index: 40;
+  width: 220px;
+}
+.composer-emoji-picker button {
+  border: none; background: none; font-size: 19px; cursor: pointer; padding: 5px;
+  border-radius: 8px; line-height: 1;
+}
+.composer-emoji-picker button:hover { background: var(--blue-pale-2); }
 
 #textInput {
   flex: 1; padding: 11px 16px; border-radius: 12px; border: 1px solid var(--blue-line);
