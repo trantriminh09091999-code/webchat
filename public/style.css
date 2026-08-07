@@ -208,10 +208,11 @@ html, body {
 
 /* Trả lời / cảm xúc / thu hồi - icon nhỏ cạnh bong bóng */
 .msg-actions {
-  display: flex; align-items: center; gap: 2px; opacity: 0.55;
+  display: flex; align-items: center; gap: 2px; opacity: 0;
+  pointer-events: none;
   transition: opacity 0.12s ease;
 }
-.msg:hover .msg-actions { opacity: 1; }
+.msg:hover .msg-actions { opacity: 1; pointer-events: auto; }
 .msg-action-btn {
   border: none; background: var(--white); color: var(--blue-mid);
   width: 24px; height: 24px; border-radius: 50%; font-size: 12px;
@@ -448,7 +449,7 @@ html, body {
   .msg { max-width: 82%; }
   .media-grid { grid-template-columns: repeat(3, 1fr); }
   .gif-results { grid-template-columns: repeat(2, 1fr); }
-  .msg-actions { opacity: 1; }
+  .msg-actions { opacity: 1; pointer-events: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
