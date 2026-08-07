@@ -57,13 +57,25 @@ mongoose.connection.once('open', async () => {
       await Group.create({ name: 'Nhóm chung', createdBy: 'system', members: [] });
       console.log('Đã tạo nhóm mặc định: Nhóm chung');
     }
-    const broken = await Group.find({ members: { $exists: false } });
-    for (const g of broken) {
-      g.members = g.createdBy && g.createdBy !== 'system' ? [g.createdBy] : [];
-      g.nicknames = g.nicknames || {};
-      await g.save();
+
+    const allGroups = await Group.find();
+    let cleaned = 0;
+    for (const g of allGroups) {
+      const original = JSON.stringify(g.members || []);
+      let members = Array.isArray(g.members) ? g.members : [];
+      members = members.filter((m) => typeof m === 'string' && m && m !== '[object Object]');
+      members = [...new Set(members)];
+      if (members.length === 0 && g.createdBy && g.createdBy !== 'system') {
+        members = [g.createdBy];
+      }
+      if (JSON.stringify(members) !== original) {
+        g.members = members;
+        g.nicknames = g.nicknames || {};
+        await g.save();
+        cleaned++;
+      }
     }
-    if (broken.length) console.log(`Đã vá dữ liệu cho ${broken.length} nhóm cũ`);
+    if (cleaned) console.log(`Đã dọn dữ liệu rác cho ${cleaned} nhóm`);
   } catch (err) {
     console.error('Lỗi tạo/vá nhóm:', err.message);
   }
