@@ -206,7 +206,7 @@ html, body {
 .msg-body-row { display: flex; align-items: center; gap: 6px; }
 .msg.own .msg-body-row { flex-direction: row-reverse; }
 
-/* Trả lời / cảm xúc / thu hồi - icon nhỏ cạnh bong bóng */
+/* Icon trả lời / cảm xúc / menu — chỉ hiện khi rê chuột vào (desktop) */
 .msg-actions {
   display: flex; align-items: center; gap: 2px; opacity: 0;
   pointer-events: none;
@@ -221,7 +221,6 @@ html, body {
 }
 .msg-action-btn:hover { background: var(--blue-pale); color: var(--blue-dark); }
 
-/* Menu 3 chấm */
 .msg-more-wrap { position: relative; }
 .msg-more-menu {
   position: absolute; top: 28px; right: 0; background: var(--white);
@@ -236,7 +235,6 @@ html, body {
 .msg-more-menu button:hover { background: var(--blue-pale-2); }
 .msg-more-menu button.danger { color: var(--danger); }
 
-/* Bảng chọn emoji nhanh */
 .emoji-picker {
   position: absolute; top: 28px; background: var(--white);
   border: 1px solid var(--blue-line); border-radius: 20px; box-shadow: 0 10px 24px rgba(10,74,99,0.15);
@@ -259,7 +257,6 @@ html, body {
 .msg.own .bubble a { color: #fff; }
 .bubble.recalled { font-style: italic; opacity: 0.65; background: var(--blue-pale-2); }
 
-/* Trả lời hiển thị trong bong bóng */
 .reply-quote {
   border-left: 3px solid var(--blue-dark); padding: 4px 8px; margin-bottom: 6px;
   font-size: 12px; color: var(--blue-mid); background: rgba(255,255,255,0.5); border-radius: 6px;
@@ -273,7 +270,6 @@ html, body {
 }
 .attachment.gif img { max-width: 200px; max-height: 200px; }
 
-/* Reactions hiển thị dưới bong bóng */
 .reactions-row { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .reaction-chip {
   background: var(--white); border: 1px solid var(--blue-line); border-radius: 12px;
@@ -282,7 +278,7 @@ html, body {
 }
 .reaction-chip.mine { border-color: var(--blue); background: var(--blue-pale); }
 
-/* ---------- Reply preview (trên composer) ---------- */
+/* ---------- Reply preview ---------- */
 .reply-preview {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 24px; background: var(--blue-pale-2); border-top: 1px solid var(--blue-line);
@@ -305,6 +301,8 @@ html, body {
 }
 .icon-btn:hover { filter: brightness(0.97); }
 .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#gifBtn { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+
 .composer-emoji-wrap { position: relative; }
 .composer-emoji-picker {
   position: absolute; bottom: 48px; left: 0; background: var(--white);
@@ -460,6 +458,7 @@ html, body {
   .msg { max-width: 82%; }
   .media-grid { grid-template-columns: repeat(3, 1fr); }
   .gif-results { grid-template-columns: repeat(2, 1fr); }
+  /* Trên di động không rê chuột được, nên icon luôn hiện sẵn */
   .msg-actions { opacity: 1; pointer-events: auto; }
 }
 
