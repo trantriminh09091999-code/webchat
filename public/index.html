@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#111827">
 <title>4 Anh Tày — Chat nhóm</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobile-performance.css?v=1">
 </head>
 <body>
 <div id="toast" class="toast hidden"></div>
@@ -41,5 +42,7 @@
 <div id="drawer" class="drawer hidden"><div class="drawer-head"><h2 id="drawerTitle">Thông tin nhóm</h2><button id="closeDrawer">×</button></div><div id="drawerContent"></div></div>
 <template id="groupInfoTemplate"><div class="settings-list">
 <button data-view="media">🖼 Ảnh và video đã gửi</button><button data-view="members">👥 Thành viên & biệt danh</button><button data-view="pins">📌 Tin nhắn đã ghim</button><button data-view="events">🎮 Lịch chơi game / đi chơi</button><button data-view="memories">💫 Kho kỷ niệm</button><button data-action="mute">🔕 Tắt/bật thông báo nhóm</button><button data-action="rename">✏️ Đổi tên nhóm</button><button data-action="leave" class="danger">🚪 Rời nhóm</button><button data-action="delete" class="danger">🗑 Xóa nhóm</button></div></template>
-<script src="/socket.io/socket.io.js"></script><script src="client.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js?v=5"></script>
+<script src="realtime-fix.js?v=1"></script>
 </body></html>
