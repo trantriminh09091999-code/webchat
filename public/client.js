@@ -460,6 +460,11 @@ deleteGroupBtn.addEventListener('click', async () => {
   } catch (err) { alert('Lỗi kết nối máy chủ.'); }
 });
 
+function displayNameFor(username) {
+  const nick = (activeGroupData?.nicknames || {})[username];
+  return nick || username;
+}
+
 function renderMessage(msg) {
   const wrap = document.createElement('div');
   wrap.className = 'msg' + (msg.name === myName ? ' own' : '');
@@ -470,8 +475,8 @@ function renderMessage(msg) {
   const hh = String(time.getHours()).padStart(2, '0');
   const mm = String(time.getMinutes()).padStart(2, '0');
   const pinnedNow = pinnedMessages.some((p) => p._id === msg._id);
-  meta.innerHTML = `<span class="msg-name">${escapeHtml(msg.name)}</span><span>${hh}:${mm}</span><button class="pin-btn${pinnedNow ? ' pinned' : ''}" data-msg-id="${msg._id}" title="Ghim tin nhắn">📌</button>`;
-
+  meta.innerHTML = `<span class="msg-name">${escapeHtml(displayNameFor(msg.name))}</span><span>${hh}:${mm}</span><button class="pin-btn${pinnedNow ? ' pinned' : ''}" data-msg-id="${msg._id}" title="Ghim tin nhắn">📌</button>`;
+  
   const pinBtn = meta.querySelector('.pin-btn');
   pinBtn.addEventListener('click', () => {
     socket.emit('pinMessage', { groupId: activeGroupId, messageId: msg._id });
