@@ -82,9 +82,18 @@
 
     <div id="messages" class="messages" aria-live="polite"></div>
 
+    <div id="replyPreview" class="reply-preview hidden">
+      <div class="reply-preview-info">
+        <span class="reply-preview-label">Trả lời</span>
+        <span id="replyPreviewText"></span>
+      </div>
+      <button type="button" id="cancelReply">✕</button>
+    </div>
+
     <form id="composer" class="composer">
       <button type="button" id="attachBtn" class="icon-btn" title="Gửi ảnh / video" aria-label="Đính kèm file">📎</button>
       <input id="fileInput" type="file" accept="image/*,video/*" hidden />
+      <button type="button" id="gifBtn" class="icon-btn" title="Gửi GIF" aria-label="Gửi GIF">GIF</button>
       <input id="textInput" type="text" placeholder="Nhắn gì đó, dán link cũng được…" autocomplete="off" />
       <button type="submit" id="sendBtn" class="send-btn" aria-label="Gửi">Gửi</button>
     </form>
@@ -105,6 +114,18 @@
     <div class="modal-actions">
       <button type="button" id="cancelCreateGroup" class="modal-btn-secondary">Hủy</button>
       <button type="button" id="confirmCreateGroup" class="modal-btn-primary">Tạo nhóm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hộp thoại chọn GIF -->
+<div id="gifModal" class="modal-overlay hidden">
+  <div class="modal-card gif-modal-card">
+    <h3>Chọn GIF</h3>
+    <input id="gifSearchInput" type="text" placeholder="Tìm GIF (vd: happy, cry, cat...)" />
+    <div id="gifResults" class="gif-results"></div>
+    <div class="modal-actions">
+      <button type="button" id="closeGifModal" class="modal-btn-secondary">Đóng</button>
     </div>
   </div>
 </div>
