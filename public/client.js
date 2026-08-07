@@ -1,5 +1,7 @@
 const socket = io();
 
+const GIPHY_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65'; // Giphy public demo key
+
 // ---- Elements ----
 const authScreen = document.getElementById('authScreen');
 const chatScreen = document.getElementById('chatScreen');
@@ -40,6 +42,7 @@ const composer = document.getElementById('composer');
 const textInput = document.getElementById('textInput');
 const attachBtn = document.getElementById('attachBtn');
 const fileInput = document.getElementById('fileInput');
+const gifBtn = document.getElementById('gifBtn');
 const attachPreview = document.getElementById('attachPreview');
 const attachName = document.getElementById('attachName');
 const cancelAttach = document.getElementById('cancelAttach');
@@ -47,6 +50,15 @@ const typingIndicator = document.getElementById('typingIndicator');
 const menuBtn = document.getElementById('menuBtn');
 const sidebar = document.querySelector('.sidebar');
 const sendBtn = document.getElementById('sendBtn');
+
+const replyPreview = document.getElementById('replyPreview');
+const replyPreviewText = document.getElementById('replyPreviewText');
+const cancelReply = document.getElementById('cancelReply');
+
+const gifModal = document.getElementById('gifModal');
+const gifSearchInput = document.getElementById('gifSearchInput');
+const gifResults = document.getElementById('gifResults');
+const closeGifModal = document.getElementById('closeGifModal');
 
 const groupSettingsOverlay = document.getElementById('groupSettingsOverlay');
 const closeGroupSettings = document.getElementById('closeGroupSettings');
@@ -68,13 +80,19 @@ const deleteGroupBtn = document.getElementById('deleteGroupBtn');
 let myName = '';
 let myToken = '';
 let pendingAttachment = null;
+let pendingGif = null;
+let replyingTo = null;
 let isSending = false;
 let typingTimeout = null;
 let groups = [];
 let activeGroupId = null;
 let activeGroupData = null;
 let pinnedMessages = [];
+let gifSearchTimer = null;
 
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+// ---- Auth tabs ----
 tabLogin.addEventListener('click', () => {
   tabLogin.classList.add('active');
   tabRegister.classList.remove('active');
@@ -166,6 +184,11 @@ function groupInitials(name) {
   return words.map((w) => w[0]).join('').toUpperCase();
 }
 
+function displayNameFor(username) {
+  const nick = (activeGroupData?.nicknames || {})[username];
+  return nick || username;
+}
+
 function isMuted(groupId) {
   const muted = JSON.parse(localStorage.getItem('t4_muted') || '[]');
   return muted.includes(groupId);
@@ -209,6 +232,7 @@ function selectGroup(groupId) {
   renderGroupList();
   messagesEl.innerHTML = '';
   pinnedMessages = [];
+  cancelReplyTo();
   updatePinnedBar();
   socket.emit('joinGroup', groupId);
   sidebar.classList.remove('open');
@@ -227,6 +251,13 @@ socket.on('message', (msg) => {
   if (msg.groupId !== activeGroupId) return;
   renderMessage(msg);
   scrollToBottom();
+});
+
+socket.on('messageUpdated', (msg) => {
+  if (msg.groupId !== activeGroupId) return;
+  const el = messagesEl.querySelector(`[data-id="${msg._id}"]`);
+  if (el) el.replaceWith(buildMessageEl(msg));
+  pinnedMessages = pinnedMessages.map((p) => (p._id === msg._id ? msg : p));
 });
 
 socket.on('groupCreated', (group) => {
@@ -261,31 +292,29 @@ socket.on('pinnedUpdate', ({ groupId, pinned }) => {
   if (groupId !== activeGroupId) return;
   pinnedMessages = pinned;
   updatePinnedBar();
-  document.querySelectorAll('.pin-btn').forEach((btn) => {
+  document.querySelectorAll('.pin-action').forEach((btn) => {
     const id = btn.dataset.msgId;
-    btn.classList.toggle('pinned', pinned.some((p) => p._id === id));
+    btn.classList.toggle('pinned-active', pinned.some((p) => p._id === id));
   });
 });
 
 function updatePinnedBar() {
-  if (pinnedMessages.length === 0) {
-    pinnedBar.classList.add('hidden');
-    return;
-  }
+  if (pinnedMessages.length === 0) { pinnedBar.classList.add('hidden'); return; }
   pinnedBar.classList.remove('hidden');
   const latest = pinnedMessages[0];
-  pinnedText.textContent = `${latest.name}: ${latest.text || '[tệp đính kèm]'}`;
+  pinnedText.textContent = `${displayNameFor(latest.name)}: ${latest.text || '[tệp đính kèm]'}`;
 }
 
 let typingClearTimer = null;
 socket.on('typing', ({ name, isTyping }) => {
   if (isTyping) {
-    typingIndicator.textContent = `${name} đang nhập…`;
+    typingIndicator.textContent = `${displayNameFor(name)} đang nhập…`;
     clearTimeout(typingClearTimer);
     typingClearTimer = setTimeout(() => (typingIndicator.textContent = ''), 2500);
   }
 });
 
+// ---- Modal tạo nhóm ----
 function openCreateGroupModal() {
   newGroupName.value = '';
   hideAuthError(createGroupError);
@@ -314,6 +343,7 @@ confirmCreateGroup.addEventListener('click', async () => {
   } catch (err) { showAuthError(createGroupError, 'Lỗi kết nối máy chủ.'); }
 });
 
+// ---- Panel cài đặt nhóm ----
 groupSettingsBtn.addEventListener('click', openGroupSettings);
 closeGroupSettings.addEventListener('click', () => groupSettingsOverlay.classList.add('hidden'));
 
@@ -329,11 +359,8 @@ async function openGroupSettings() {
   groupSettingsOverlay.classList.remove('hidden');
 }
 
-muteToggle.addEventListener('change', () => {
-  setMuted(activeGroupId, muteToggle.checked);
-});
+muteToggle.addEventListener('change', () => setMuted(activeGroupId, muteToggle.checked));
 
-// ---- Lưu biệt danh (đã sửa: báo rõ kết quả) ----
 saveNicknameBtn.addEventListener('click', async () => {
   const original = saveNicknameBtn.textContent;
   try {
@@ -348,18 +375,20 @@ saveNicknameBtn.addEventListener('click', async () => {
       const idx = groups.findIndex((g) => g._id === data._id);
       if (idx >= 0) groups[idx] = data;
       renderMemberList();
+      messagesEl.querySelectorAll('.msg-name').forEach((el) => {
+        const uname = el.dataset.username;
+        if (uname) el.textContent = displayNameFor(uname);
+      });
       saveNicknameBtn.textContent = 'Đã lưu ✓';
       setTimeout(() => (saveNicknameBtn.textContent = original), 1500);
     } else {
       alert(data.error || 'Lưu thất bại.');
     }
-  } catch (err) {
-    alert('Lỗi kết nối máy chủ.');
-  }
+  } catch (err) { alert('Lỗi kết nối máy chủ.'); }
 });
 
 function renderMemberList() {
-  const members = activeGroupData?.members || [];
+  const members = (activeGroupData?.members || []).filter((m) => typeof m === 'string' && m);
   memberCount.textContent = members.length;
   memberList.innerHTML = '';
   members.forEach((m) => {
@@ -378,8 +407,7 @@ function renderMemberList() {
       removeBtn.addEventListener('click', async () => {
         try {
           const res = await fetch(`/api/groups/${activeGroupId}/members/${encodeURIComponent(m)}`, {
-            method: 'DELETE',
-            headers: { Authorization: 'Bearer ' + myToken }
+            method: 'DELETE', headers: { Authorization: 'Bearer ' + myToken }
           });
           const data = await res.json();
           if (res.ok) { activeGroupData = data; renderMemberList(); }
@@ -432,7 +460,7 @@ function renderPinnedList() {
     const time = new Date(m.time);
     const hh = String(time.getHours()).padStart(2, '0');
     const mm = String(time.getMinutes()).padStart(2, '0');
-    li.innerHTML = `<div class="pinned-item-meta">${escapeHtml(m.name)} · ${hh}:${mm}</div>${escapeHtml(m.text || '[tệp đính kèm]')}`;
+    li.innerHTML = `<div class="pinned-item-meta">${escapeHtml(displayNameFor(m.name))} · ${hh}:${mm}</div>${escapeHtml(m.text || '[tệp đính kèm]')}`;
     pinnedList.appendChild(li);
   });
 }
@@ -440,9 +468,7 @@ function renderPinnedList() {
 leaveGroupBtn.addEventListener('click', async () => {
   if (!confirm('Bạn chắc chắn muốn rời nhóm này?')) return;
   try {
-    await fetch(`/api/groups/${activeGroupId}/leave`, {
-      method: 'POST', headers: { Authorization: 'Bearer ' + myToken }
-    });
+    await fetch(`/api/groups/${activeGroupId}/leave`, { method: 'POST', headers: { Authorization: 'Bearer ' + myToken } });
     groupSettingsOverlay.classList.add('hidden');
     await loadGroups();
   } catch (err) { alert('Lỗi kết nối máy chủ.'); }
@@ -451,60 +477,190 @@ leaveGroupBtn.addEventListener('click', async () => {
 deleteGroupBtn.addEventListener('click', async () => {
   if (!confirm('Xóa nhóm sẽ mất toàn bộ tin nhắn. Bạn chắc chắn?')) return;
   try {
-    const res = await fetch(`/api/groups/${activeGroupId}`, {
-      method: 'DELETE', headers: { Authorization: 'Bearer ' + myToken }
-    });
+    const res = await fetch(`/api/groups/${activeGroupId}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + myToken } });
     const data = await res.json();
     if (!res.ok) return alert(data.error || 'Xóa nhóm thất bại.');
     groupSettingsOverlay.classList.add('hidden');
   } catch (err) { alert('Lỗi kết nối máy chủ.'); }
 });
 
-function displayNameFor(username) {
-  const nick = (activeGroupData?.nicknames || {})[username];
-  return nick || username;
+// ---- Trả lời tin nhắn ----
+function setReplyTo(msg) {
+  replyingTo = { messageId: msg._id, name: displayNameFor(msg.name), text: msg.text || '[tệp đính kèm]' };
+  replyPreviewText.textContent = `${replyingTo.name}: ${replyingTo.text}`;
+  replyPreview.classList.remove('hidden');
+  textInput.focus();
 }
+function cancelReplyTo() {
+  replyingTo = null;
+  replyPreview.classList.add('hidden');
+}
+cancelReply.addEventListener('click', cancelReplyTo);
 
-function renderMessage(msg) {
+// ---- Rendering tin nhắn ----
+function closeAllPopups() {
+  document.querySelectorAll('.msg-more-menu, .emoji-picker').forEach((el) => el.remove());
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.msg-actions') && !e.target.closest('.msg-more-menu') && !e.target.closest('.emoji-picker')) {
+    closeAllPopups();
+  }
+});
+
+function buildMessageEl(msg) {
   const wrap = document.createElement('div');
   wrap.className = 'msg' + (msg.name === myName ? ' own' : '');
+  wrap.dataset.id = msg._id;
 
   const meta = document.createElement('div');
   meta.className = 'msg-meta';
   const time = new Date(msg.time);
   const hh = String(time.getHours()).padStart(2, '0');
   const mm = String(time.getMinutes()).padStart(2, '0');
-  const pinnedNow = pinnedMessages.some((p) => p._id === msg._id);
-  meta.innerHTML = `<span class="msg-name">${escapeHtml(displayNameFor(msg.name))}</span><span>${hh}:${mm}</span><button class="pin-btn${pinnedNow ? ' pinned' : ''}" data-msg-id="${msg._id}" title="Ghim tin nhắn">📌</button>`;
-  
-  const pinBtn = meta.querySelector('.pin-btn');
-  pinBtn.addEventListener('click', () => {
-    socket.emit('pinMessage', { groupId: activeGroupId, messageId: msg._id });
-  });
+  meta.innerHTML = `<span class="msg-name" data-username="${escapeHtml(msg.name)}">${escapeHtml(displayNameFor(msg.name))}</span><span>${hh}:${mm}</span>`;
+
+  const bodyRow = document.createElement('div');
+  bodyRow.className = 'msg-body-row';
 
   const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  if (msg.text) bubble.innerHTML = linkify(escapeHtml(msg.text));
+  bubble.className = 'bubble' + (msg.recalled ? ' recalled' : '');
 
-  wrap.appendChild(meta);
-  wrap.appendChild(bubble);
-
-  if (msg.attachment) {
-    const box = document.createElement('div');
-    box.className = 'attachment';
-    if (msg.attachment.type === 'video') {
-      box.innerHTML = `<video src="${msg.attachment.url}" controls></video>`;
-    } else {
-      const img = document.createElement('img');
-      img.src = msg.attachment.url;
-      img.alt = 'Ảnh đính kèm';
-      img.onload = scrollToBottom;
-      box.appendChild(img);
+  if (msg.recalled) {
+    bubble.textContent = 'Tin nhắn đã được thu hồi';
+  } else {
+    if (msg.replyTo && msg.replyTo.text !== undefined) {
+      const quote = document.createElement('div');
+      quote.className = 'reply-quote';
+      quote.innerHTML = `<span class="reply-quote-name">${escapeHtml(msg.replyTo.name || '')}</span>: ${escapeHtml(msg.replyTo.text || '')}`;
+      bubble.appendChild(quote);
     }
-    wrap.appendChild(box);
+    if (msg.text) {
+      const textEl = document.createElement('span');
+      textEl.innerHTML = linkify(escapeHtml(msg.text));
+      bubble.appendChild(textEl);
+    }
+    if (msg.attachment) {
+      const box = document.createElement('div');
+      box.className = 'attachment' + (msg.attachment.type === 'gif' ? ' gif' : '');
+      if (msg.attachment.type === 'video') {
+        box.innerHTML = `<video src="${msg.attachment.url}" controls></video>`;
+      } else {
+        const img = document.createElement('img');
+        img.src = msg.attachment.url;
+        img.alt = 'Ảnh đính kèm';
+        img.onload = scrollToBottom;
+        box.appendChild(img);
+      }
+      bubble.appendChild(box);
+    }
   }
 
-  messagesEl.appendChild(wrap);
+  // Reactions
+  if (!msg.recalled && msg.reactions && Object.keys(msg.reactions).length > 0) {
+    const reactRow = document.createElement('div');
+    reactRow.className = 'reactions-row';
+    Object.entries(msg.reactions).forEach(([emoji, users]) => {
+      if (!users.length) return;
+      const chip = document.createElement('button');
+      chip.className = 'reaction-chip' + (users.includes(myName) ? ' mine' : '');
+      chip.type = 'button';
+      chip.innerHTML = `${emoji} ${users.length}`;
+      chip.title = users.map((u) => displayNameFor(u)).join(', ');
+      chip.addEventListener('click', () => socket.emit('reactMessage', { groupId: activeGroupId, messageId: msg._id, emoji }));
+      reactRow.appendChild(chip);
+    });
+    bubble.appendChild(reactRow);
+  }
+
+  // Actions: reply, emoji, 3-dot menu
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+
+  if (!msg.recalled) {
+    const replyBtn = document.createElement('button');
+    replyBtn.className = 'msg-action-btn';
+    replyBtn.title = 'Trả lời';
+    replyBtn.innerHTML = '↩';
+    replyBtn.addEventListener('click', () => setReplyTo(msg));
+    actions.appendChild(replyBtn);
+
+    const emojiBtn = document.createElement('button');
+    emojiBtn.className = 'msg-action-btn';
+    emojiBtn.title = 'Thả cảm xúc';
+    emojiBtn.innerHTML = '🙂';
+    emojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllPopups();
+      const picker = document.createElement('div');
+      picker.className = 'emoji-picker';
+      QUICK_EMOJIS.forEach((emoji) => {
+        const b = document.createElement('button');
+        b.textContent = emoji;
+        b.addEventListener('click', () => {
+          socket.emit('reactMessage', { groupId: activeGroupId, messageId: msg._id, emoji });
+          closeAllPopups();
+        });
+        picker.appendChild(b);
+      });
+      actions.appendChild(picker);
+    });
+    actions.appendChild(emojiBtn);
+  }
+
+  const moreWrap = document.createElement('div');
+  moreWrap.className = 'msg-more-wrap';
+  const moreBtn = document.createElement('button');
+  moreBtn.className = 'msg-action-btn';
+  moreBtn.title = 'Thêm';
+  moreBtn.innerHTML = '⋯';
+  moreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeAllPopups();
+    const menu = document.createElement('div');
+    menu.className = 'msg-more-menu';
+
+    const pinItem = document.createElement('button');
+    const isPinned = pinnedMessages.some((p) => p._id === msg._id);
+    pinItem.textContent = isPinned ? 'Bỏ ghim' : 'Ghim tin nhắn';
+    pinItem.addEventListener('click', () => {
+      socket.emit('pinMessage', { groupId: activeGroupId, messageId: msg._id });
+      closeAllPopups();
+    });
+    menu.appendChild(pinItem);
+
+    if (msg.name === myName && !msg.recalled) {
+      const recallItem = document.createElement('button');
+      recallItem.className = 'danger';
+      recallItem.textContent = 'Thu hồi tin nhắn';
+      recallItem.addEventListener('click', () => {
+        if (confirm('Thu hồi tin nhắn này?')) {
+          socket.emit('recallMessage', { groupId: activeGroupId, messageId: msg._id });
+        }
+        closeAllPopups();
+      });
+      menu.appendChild(recallItem);
+    }
+
+    moreWrap.appendChild(menu);
+  });
+  moreWrap.appendChild(moreBtn);
+  actions.appendChild(moreWrap);
+
+  if (msg.name === myName) {
+    bodyRow.appendChild(actions);
+    bodyRow.appendChild(bubble);
+  } else {
+    bodyRow.appendChild(bubble);
+    bodyRow.appendChild(actions);
+  }
+
+  wrap.appendChild(meta);
+  wrap.appendChild(bodyRow);
+  return wrap;
+}
+
+function renderMessage(msg) {
+  messagesEl.appendChild(buildMessageEl(msg));
 }
 
 function escapeHtml(str) {
@@ -523,12 +679,13 @@ function linkify(text) {
 
 function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
+// ---- Gửi tin nhắn ----
 composer.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (isSending) return;
 
   const text = textInput.value.trim();
-  if ((!text && !pendingAttachment) || !activeGroupId) return;
+  if ((!text && !pendingAttachment && !pendingGif) || !activeGroupId) return;
 
   isSending = true;
   sendBtn.disabled = true;
@@ -537,14 +694,18 @@ composer.addEventListener('submit', async (e) => {
   sendBtn.textContent = 'Đang gửi...';
 
   try {
-    let attachment = null;
+    let attachment = pendingGif || null;
     if (pendingAttachment) {
       attachment = await uploadFile(pendingAttachment.file);
       if (!attachment) return;
     }
-    socket.emit('chatMessage', { text, attachment });
+    socket.emit('chatMessage', {
+      text, attachment,
+      replyTo: replyingTo ? { messageId: replyingTo.messageId, name: replyingTo.name, text: replyingTo.text } : null
+    });
     textInput.value = '';
     clearAttachment();
+    cancelReplyTo();
   } finally {
     isSending = false;
     sendBtn.disabled = false;
@@ -578,6 +739,7 @@ textInput.addEventListener('paste', (e) => {
     if (item.type.startsWith('image/')) {
       const file = item.getAsFile();
       if (file) {
+        pendingGif = null;
         pendingAttachment = { file };
         attachName.textContent = '📎 Ảnh đã dán';
         attachPreview.classList.remove('hidden');
@@ -592,6 +754,7 @@ attachBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
   if (!file) return;
+  pendingGif = null;
   pendingAttachment = { file };
   attachName.textContent = '📎 ' + file.name;
   attachPreview.classList.remove('hidden');
@@ -599,6 +762,7 @@ fileInput.addEventListener('change', () => {
 cancelAttach.addEventListener('click', clearAttachment);
 function clearAttachment() {
   pendingAttachment = null;
+  pendingGif = null;
   fileInput.value = '';
   attachPreview.classList.add('hidden');
 }
@@ -607,4 +771,66 @@ textInput.addEventListener('input', () => {
   socket.emit('typing', true);
   clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => socket.emit('typing', false), 1200);
+});
+
+// ---- GIF ----
+gifBtn.addEventListener('click', () => {
+  gifModal.classList.remove('hidden');
+  gifSearchInput.value = '';
+  gifResults.innerHTML = '';
+  loadTrendingGifs();
+  gifSearchInput.focus();
+});
+closeGifModal.addEventListener('click', () => gifModal.classList.add('hidden'));
+
+async function loadTrendingGifs() {
+  gifResults.innerHTML = '<div class="gif-empty">Đang tải...</div>';
+  try {
+    const res = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=18&rating=pg-13`);
+    const data = await res.json();
+    renderGifResults(data.data);
+  } catch (err) {
+    gifResults.innerHTML = '<div class="gif-empty">Không tải được GIF.</div>';
+  }
+}
+
+async function searchGifs(q) {
+  gifResults.innerHTML = '<div class="gif-empty">Đang tìm...</div>';
+  try {
+    const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`);
+    const data = await res.json();
+    renderGifResults(data.data);
+  } catch (err) {
+    gifResults.innerHTML = '<div class="gif-empty">Không tải được GIF.</div>';
+  }
+}
+
+function renderGifResults(items) {
+  gifResults.innerHTML = '';
+  if (!items || items.length === 0) {
+    gifResults.innerHTML = '<div class="gif-empty">Không tìm thấy GIF nào.</div>';
+    return;
+  }
+  items.forEach((item) => {
+    const img = document.createElement('img');
+    img.src = item.images.fixed_width_small?.url || item.images.original.url;
+    img.loading = 'lazy';
+    img.addEventListener('click', () => {
+      pendingGif = { url: item.images.original.url, type: 'gif' };
+      pendingAttachment = null;
+      attachName.textContent = '🎞️ GIF đã chọn';
+      attachPreview.classList.remove('hidden');
+      gifModal.classList.add('hidden');
+      textInput.focus();
+    });
+    gifResults.appendChild(img);
+  });
+}
+
+gifSearchInput.addEventListener('input', () => {
+  clearTimeout(gifSearchTimer);
+  const q = gifSearchInput.value.trim();
+  gifSearchTimer = setTimeout(() => {
+    if (q) searchGifs(q); else loadTrendingGifs();
+  }, 400);
 });
