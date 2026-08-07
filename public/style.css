@@ -191,23 +191,62 @@ html, body {
 /* ---------- Messages ---------- */
 .messages {
   flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px;
-  display: flex; flex-direction: column; gap: 14px; background: var(--blue-pale-2);
+  display: flex; flex-direction: column; gap: 16px; background: var(--blue-pale-2);
 }
 .messages::-webkit-scrollbar { width: 8px; }
 .messages::-webkit-scrollbar-thumb { background: var(--blue-line); border-radius: 8px; }
 
-.msg { display: flex; flex-direction: column; max-width: 62%; }
+.msg { display: flex; flex-direction: column; max-width: 62%; position: relative; }
 .msg.own { align-self: flex-end; align-items: flex-end; }
 
 .msg-meta { font-size: 12px; color: var(--blue-mid); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
 .msg-name { color: var(--blue-dark); font-weight: 600; }
 .msg.own .msg-name { color: var(--blue); }
-.pin-btn {
-  border: none; background: none; cursor: pointer; font-size: 12px; color: var(--blue-mid);
-  padding: 0; opacity: 0.5;
+
+.msg-body-row { display: flex; align-items: center; gap: 6px; }
+.msg.own .msg-body-row { flex-direction: row-reverse; }
+
+/* Trả lời / cảm xúc / thu hồi - icon nhỏ cạnh bong bóng */
+.msg-actions {
+  display: flex; align-items: center; gap: 2px; opacity: 0.55;
+  transition: opacity 0.12s ease;
 }
-.pin-btn:hover { opacity: 1; }
-.pin-btn.pinned { opacity: 1; color: var(--blue-dark); }
+.msg:hover .msg-actions { opacity: 1; }
+.msg-action-btn {
+  border: none; background: var(--white); color: var(--blue-mid);
+  width: 24px; height: 24px; border-radius: 50%; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--blue-line);
+}
+.msg-action-btn:hover { background: var(--blue-pale); color: var(--blue-dark); }
+
+/* Menu 3 chấm */
+.msg-more-wrap { position: relative; }
+.msg-more-menu {
+  position: absolute; top: 28px; right: 0; background: var(--white);
+  border: 1px solid var(--blue-line); border-radius: 10px; box-shadow: 0 10px 24px rgba(10,74,99,0.15);
+  display: flex; flex-direction: column; min-width: 130px; z-index: 30; overflow: hidden;
+}
+.msg.own .msg-more-menu { right: auto; left: 0; }
+.msg-more-menu button {
+  border: none; background: none; text-align: left; padding: 9px 12px; font-size: 13px;
+  color: var(--blue-deep); cursor: pointer; font-family: var(--font-body);
+}
+.msg-more-menu button:hover { background: var(--blue-pale-2); }
+.msg-more-menu button.danger { color: var(--danger); }
+
+/* Bảng chọn emoji nhanh */
+.emoji-picker {
+  position: absolute; top: 28px; background: var(--white);
+  border: 1px solid var(--blue-line); border-radius: 20px; box-shadow: 0 10px 24px rgba(10,74,99,0.15);
+  display: flex; gap: 2px; padding: 4px 6px; z-index: 30;
+}
+.msg.own .emoji-picker { right: 0; }
+.emoji-picker button {
+  border: none; background: none; font-size: 17px; cursor: pointer; padding: 4px;
+  border-radius: 50%; line-height: 1;
+}
+.emoji-picker button:hover { background: var(--blue-pale-2); }
 
 .bubble {
   background: var(--blue-pale); border: 1px solid var(--blue-line); padding: 10px 14px;
@@ -217,11 +256,41 @@ html, body {
 .msg.own .bubble { background: var(--blue); border-color: var(--blue); color: #fff; border-radius: 16px 16px 4px 16px; }
 .bubble a { color: var(--blue-dark); text-decoration: underline; }
 .msg.own .bubble a { color: #fff; }
+.bubble.recalled { font-style: italic; opacity: 0.65; background: var(--blue-pale-2); }
+
+/* Trả lời hiển thị trong bong bóng */
+.reply-quote {
+  border-left: 3px solid var(--blue-dark); padding: 4px 8px; margin-bottom: 6px;
+  font-size: 12px; color: var(--blue-mid); background: rgba(255,255,255,0.5); border-radius: 6px;
+}
+.msg.own .reply-quote { border-left-color: rgba(255,255,255,0.7); color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.15); }
+.reply-quote-name { font-weight: 600; }
 
 .attachment img, .attachment video {
   max-width: 280px; max-height: 280px; border-radius: 12px; display: block;
   margin-top: 6px; border: 1px solid var(--blue-line);
 }
+.attachment.gif img { max-width: 200px; max-height: 200px; }
+
+/* Reactions hiển thị dưới bong bóng */
+.reactions-row { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.reaction-chip {
+  background: var(--white); border: 1px solid var(--blue-line); border-radius: 12px;
+  padding: 2px 7px; font-size: 12px; display: flex; align-items: center; gap: 3px;
+  cursor: pointer; color: var(--blue-deep);
+}
+.reaction-chip.mine { border-color: var(--blue); background: var(--blue-pale); }
+
+/* ---------- Reply preview (trên composer) ---------- */
+.reply-preview {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 24px; background: var(--blue-pale-2); border-top: 1px solid var(--blue-line);
+  font-size: 13px; color: var(--blue-deep);
+}
+.reply-preview-info { display: flex; gap: 6px; overflow: hidden; }
+.reply-preview-label { color: var(--blue-dark); font-weight: 600; flex-shrink: 0; }
+#replyPreviewText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reply-preview button { border: none; background: none; color: var(--blue-mid); cursor: pointer; font-size: 14px; }
 
 /* ---------- Composer ---------- */
 .composer {
@@ -235,6 +304,7 @@ html, body {
 }
 .icon-btn:hover { filter: brightness(0.97); }
 .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#gifBtn { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
 
 #textInput {
   flex: 1; padding: 11px 16px; border-radius: 12px; border: 1px solid var(--blue-line);
@@ -286,6 +356,19 @@ html, body {
 .modal-btn-primary.small, .modal-btn-secondary.small { flex: none; padding: 9px 14px; font-size: 13px; }
 .modal-btn-secondary.full, .modal-btn-danger.full { width: 100%; margin-bottom: 8px; }
 .modal-close-btn { background: none; border: none; font-size: 16px; color: var(--blue-mid); cursor: pointer; }
+
+/* ---------- GIF modal ---------- */
+.gif-modal-card { max-width: 420px; }
+.gif-results {
+  margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  max-height: 320px; overflow-y: auto;
+}
+.gif-results img {
+  width: 100%; height: 90px; object-fit: cover; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--blue-line);
+}
+.gif-results img:hover { outline: 2px solid var(--blue); }
+.gif-empty { grid-column: 1 / -1; font-size: 13px; color: var(--blue-mid); text-align: center; padding: 20px 0; }
 
 /* ---------- Panel cài đặt nhóm ---------- */
 .settings-panel {
@@ -364,6 +447,8 @@ html, body {
   .menu-btn { display: block; }
   .msg { max-width: 82%; }
   .media-grid { grid-template-columns: repeat(3, 1fr); }
+  .gif-results { grid-template-columns: repeat(2, 1fr); }
+  .msg-actions { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
